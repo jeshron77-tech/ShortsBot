@@ -10,10 +10,9 @@ if not hasattr(Image, 'ANTIALIAS'):
 
 from gtts import gTTS
 import google.generativeai as genai
-from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ColorClip
+from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ImageClip
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
-PIXABAY_KEY = (os.environ.get("PEXELS_API_KEY") or "").strip()
 
 
 def generate_ai_content():
@@ -21,15 +20,33 @@ def generate_ai_content():
     model = genai.GenerativeModel('gemini-3.8-flash')
     
     prompt = (
-        "You are a viral YouTube Shorts creator specializing in the 'What If' mystery niche. "
-        "Choose an extremely gripping, mind-bending topic. "
-        "The script MUST use psychological retention hooks: open with a shocking question, state an escalating timeline (Day 1, Day 3, Day 10), and end right before the absolute peak climax to force rewatches.\n\n"
-        "Respond ONLY in clean JSON format with these exact keys:\n"
+        "You are a viral YouTube Shorts creator specializing in 'What If' mystery stories, like Zack D. Films.\n"
+        "Choose an extremely gripping, mind-bending topic and write a story split into 4 chronological visual scenes (Day 1, Day 3, Day 5, Day 10).\n\n"
+        "Crucial: Break down the visual progress into exactly 4 sequential visual scenes matching your 35-second voice script, where 3D characters interact with what is happening.\n"
+        "You MUST respond ONLY in clean JSON format with these exact keys (no markdown blocks, no prefix text):\n"
         "{\n"
-        '  "title": "[Insert Viral Title with a Shocking Emoji and #shorts]",\n'
-        '  "description": "[Insert a 2-sentence description that leaves a cliffhanger riddle for the comments section]",\n'
-        '  "tags": ["shorts", "whatif", "mindblown", "viralscience", "mysteries"],\n'
-        '  "voice_script": "[Insert a 35-second script with short, punching sentences. No introduction, start directly with the hook. Use dramatic words.]"\n'
+        '  "title": "[Viral title with emoji and #shorts]",\n'
+        '  "description": "[2-sentence cliffhanger description for comments]",\n'
+        '  "tags": ["shorts", "whatif", "mindblown", "mystery"],\n'
+        '  "voice_script": "[Punchy, dramatic 35-second script split into exactly 4 connected visual beats.]",\n'
+        '  "scenes": [\n'
+        '    {\n'
+        '      "script_beat": "[The exact script spoken during this 8-9 second scene]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Close-up/Medium cinematic view of [detailed description of a stylized person in a shocking situation matching the spoken beat, dramatic action, vibrant 3D renders, vertical 9:16 aspect ratio]"\n'
+        '    },\n'
+        '    {\n'
+        '      "script_beat": "[The exact script spoken during this second 8-9 second scene]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Cinematic [detailed camera view of what escalates, stylized 3D people react, highly detailed 3D assets, dark volumetric lighting, vertical 9:16 aspect ratio]"\n'
+        '    },\n'
+        '    {\n'
+        '      "script_beat": "[The exact script spoken during this third 8-9 second scene]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Low angle [detailed 3D escalation, shocking event, stylized cinematic characters fleeing or panicking, bright action lighting, vertical 9:16 aspect ratio]"\n'
+        '    },\n'
+        '    {\n'
+        '      "script_beat": "[The climax script spoken during this last 8-9 second scene]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Extremely dramatic close-up [final shocking climax twist, stylized characters, dark atmospheric volumetric glow, high-intensity cinematic 3D, vertical 9:16 aspect ratio]"\n'
+        '    }\n'
+        '  ]\n'
         "}"
     )
     
@@ -45,56 +62,56 @@ def make_voice(text):
     print("Voiceover saved successfully to audio.mp3")
 
 
-def fetch_background(duration=35):
-    search_terms = ["space", "galaxy", "abstract", "nature", "stars"]
-    query = random.choice(search_terms)
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-    
-    url = f"https://pixabay.com/api/videos/?key={PIXABAY_KEY}&q={query}&video_type=film&orientation=vertical"
-    
-    try:
-        res = requests.get(url, headers=headers, timeout=15)
-        if res.status_code == 200:
-            data = res.json()
-            hits = data.get('hits', [])
-            if hits:
-                random_video = random.choice(hits)
-                video_url = (
-                    random_video.get('videos', {}).get('large', {}).get('url')
-                    or random_video.get('videos', {}).get('medium', {}).get('url')
-                    or random_video.get('videos', {}).get('small', {}).get('url')
-                )
-                if video_url:
-                    print(f"Downloading clip from Pixabay: {query}")
-                    video_data = requests.get(video_url, headers=headers, timeout=30).content
-                    with open("bg.mp4", "wb") as f:
-                        f.write(video_data)
-                    return
-    except Exception as e:
-        print(f"Pixabay request notice: {e}")
-
-    print("Using dynamic vertical canvas for background...")
-    clip = ColorClip(size=(1080, 1920), color=(15, 15, 25), duration=duration)
-    clip.write_videofile("bg.mp4", fps=24, codec="libx264")
+def fetch_scene_images(scenes):
+    print("Fetching scene-specific AI images from Pollinations AI...")
+    for index, scene in enumerate(scenes):
+        prompt = scene['image_prompt']
+        # URL encode prompt
+        encoded_prompt = requests.utils.quote(prompt)
+        url = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&seed={random.randint(1,9999999)}"
+        
+        try:
+            print(f"Downloading Image for Scene {index+1}: {scene['script_beat'][:50]}...")
+            res = requests.get(url, timeout=30)
+            if res.status_code == 200:
+                with open(f"scene_{index}.jpg", "wb") as f:
+                    f.write(res.content)
+            else:
+                raise RuntimeError(f"Failed to generate image, status: {res.status_code}")
+        except Exception as e:
+            print(f"Error on Scene {index+1}, generating emergency color block: {e}")
+            img = Image.new('RGB', (1080, 1920), color=(15, 15, 25 + index * 10))
+            img.save(f"scene_{index}.jpg")
 
 
 def mix_video_with_subtitles(metadata):
     audio = AudioFileClip("audio.mp3")
-    video = VideoFileClip("bg.mp4")
+    total_duration = audio.duration
     
-    if video.duration < audio.duration:
-        video = video.loop(duration=audio.duration)
-    else:
-        video = video.subclip(0, audio.duration)
+    scenes = metadata['scenes']
+    num_scenes = len(scenes)
+    duration_per_scene = total_duration / num_scenes
+    
+    scene_clips = []
+    
+    for i in range(num_scenes):
+        start_t = i * duration_per_scene
+        # Let image clip go slightly over or match the endpoint
+        clip_dur = duration_per_scene if i < num_scenes - 1 else (total_duration - start_t)
         
-    video = video.resize((1080, 1920))
-    
+        # Load the generated AI image for this scene
+        img_clip = ImageClip(f"scene_{i}.jpg").set_duration(clip_dur).set_start(start_t)
+        
+        # Add a subtle, slow continuous 3D Zoom motion (Ken Burns)
+        # Slow zoom factor from 1.0 to 1.15 over duration
+        img_clip = img_clip.resize(lambda t: 1.0 + 0.15 * (t / clip_dur))
+        
+        scene_clips.append(img_clip)
+        
+    print("Layering text phrases on top of animated scenes...")
     words = metadata["voice_script"].split()
     phrases = [" ".join(words[i:i+3]) for i in range(0, len(words), 3)]
-    duration_per_phrase = audio.duration / len(phrases)
+    duration_per_phrase = total_duration / len(phrases)
     text_clips = []
     
     current_time = 0
@@ -107,13 +124,13 @@ def mix_video_with_subtitles(metadata):
             stroke_color='black',
             stroke_width=3,
             method='caption',
-            size=(video.w - 120, None)
+            size=(960, None) # Stay in portrait screen boundary
         )
         txt_clip = txt_clip.set_start(current_time).set_duration(duration_per_phrase).set_pos('center')
         text_clips.append(txt_clip)
         current_time += duration_per_phrase
         
-    final_video = CompositeVideoClip([video] + text_clips)
+    final_video = CompositeVideoClip(scene_clips + text_clips)
     final_video = final_video.set_audio(audio)
     final_video.write_videofile("final.mp4", fps=24, codec="libx264", audio_codec="aac")
 
@@ -146,16 +163,16 @@ def post_to_youtube(metadata):
 
 
 if __name__ == "__main__":
-    print("1. Generating AI content...")
+    print("1. Generating AI content & Scene Breakdown...")
     meta = generate_ai_content()
     
     print("2. Generating voiceover...")
     make_voice(meta['voice_script'])
     
-    print("3. Fetching background video...")
-    fetch_background()
+    print("3. Generating scene-specific visual frames...")
+    fetch_scene_images(meta['scenes'])
     
-    print("4. Rendering video with subtitles...")
+    print("4. Rendering Video with camera motion & dynamic subtitles...")
     mix_video_with_subtitles(meta)
     
     print("5. Uploading to YouTube...")
