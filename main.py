@@ -1,9 +1,8 @@
 ﻿import os
 import json
 import requests
-import asyncio
 import random
-import subprocess
+from gtts import gTTS
 import google.generativeai as genai
 from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip
 
@@ -34,13 +33,10 @@ def generate_ai_content():
 
 
 def make_voice(text):
-    print("Generating voiceover via Edge-TTS CLI...")
-    subprocess.run([
-        "edge-tts",
-        "--text", text,
-        "--voice", "en-US-ChristopherNeural",
-        "--write-media", "audio.mp3"
-    ], check=True)
+    print("Generating voiceover via Google TTS...")
+    tts = gTTS(text=text, lang='en', tld='com', slow=False)
+    tts.save("audio.mp3")
+    print("Voiceover saved successfully to audio.mp3")
 
 
 def fetch_background():
