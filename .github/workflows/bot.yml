@@ -2,7 +2,8 @@ name: Run YouTube Shorts Bot
 
 on:
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '0 8 * * *'
+    - cron: '0 20 * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,22 +16,25 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install System Video and Font Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg imagemagick
-          sudo sed -i 's/policy domain="path" rights="none" pattern="@\*"/policy domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml
+          sudo apt-get install -y ffmpeg imagemagick fonts-dejavu-core
+          sudo sed -i 's/policy domain="path" rights="none" pattern="@\*"/policy domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml || true
 
       - name: Install dependencies
         run: |
-          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 google-genai edge-tts moviepy requests
+          pip install --upgrade pip
+          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 google-generativeai edge-tts moviepy requests
 
       - name: Inject Secrets & Run Bot
         env:
           CLIENT_SECRETS_DATA: ${{ secrets.CLIENT_SECRETS }}
           TOKEN_JSON_DATA: ${{ secrets.TOKEN_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
           echo "$CLIENT_SECRETS_DATA" > client_secrets.json
           echo "$TOKEN_JSON_DATA" > token.json
