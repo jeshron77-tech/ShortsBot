@@ -2,8 +2,8 @@ name: Run YouTube Shorts Bot
 
 on:
   schedule:
-    - cron: '0 10 * * *' # Runs every day at 10:00 AM UTC (adjust time as needed)
-  workflow_dispatch: # Allows you to run it manually with a click anytime!
+    - cron: '0 10 * * *'
+  workflow_dispatch:
 
 jobs:
   run-bot:
@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: '3.10'
 
-     - name: Install dependencies
+      - name: Install dependencies
         run: |
           pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 google-genai
 
@@ -26,9 +26,6 @@ jobs:
           CLIENT_SECRETS_DATA: ${{ secrets.CLIENT_SECRETS }}
           TOKEN_JSON_DATA: ${{ secrets.TOKEN_JSON }}
         run: |
-          # Recreate client_secrets.json and token.json securely from GitHub secrets on the fly
           echo "$CLIENT_SECRETS_DATA" > client_secrets.json
           echo "$TOKEN_JSON_DATA" > token.json
-          
-          # Run your main script
           python main.py
