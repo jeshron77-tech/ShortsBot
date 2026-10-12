@@ -2,6 +2,7 @@
 import json
 import requests
 import random
+import subprocess
 from PIL import Image
 
 # Fix Pillow 10+ backwards compatibility for MoviePy
@@ -10,7 +11,7 @@ if not hasattr(Image, 'ANTIALIAS'):
 
 from gtts import gTTS
 import google.generativeai as genai
-from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ImageClip
+from moviepy.editor import AudioFileClip, TextClip, CompositeVideoClip, ImageClip, concatenate_videoclips
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
@@ -21,30 +22,33 @@ def generate_ai_content():
     
     prompt = (
         "You are a viral YouTube Shorts creator specializing in 'What If' mystery stories, like Zack D. Films.\n"
-        "Choose an extremely gripping, mind-bending topic and write a story split into 4 chronological visual scenes (Day 1, Day 3, Day 5, Day 10).\n\n"
-        "Crucial: Break down the visual progress into exactly 4 sequential visual scenes matching your 35-second voice script, where 3D characters interact with what is happening.\n"
-        "You MUST respond ONLY in clean JSON format with these exact keys (no markdown blocks, no prefix text):\n"
+        "Pick an intense topic. Write a gripping 35-second script split into EXACTLY 5 sequential scenes (Timeline: Day 1, Day 3, Day 5, Day 7, Day 10).\n\n"
+        "Respond ONLY in clean JSON without markdown codeblocks or extra text:\n"
         "{\n"
         '  "title": "[Viral title with emoji and #shorts]",\n'
-        '  "description": "[2-sentence cliffhanger description for comments]",\n'
+        '  "description": "[2-sentence cliffhanger for comments]",\n'
         '  "tags": ["shorts", "whatif", "mindblown", "mystery"],\n'
-        '  "voice_script": "[Punchy, dramatic 35-second script split into exactly 4 connected visual beats.]",\n'
+        '  "voice_script": "[Punchy, dramatic 35-second script split across the 5 scenes]",\n'
         '  "scenes": [\n'
         '    {\n'
-        '      "script_beat": "[The exact script spoken during this 8-9 second scene]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Close-up/Medium cinematic view of [detailed description of a stylized person in a shocking situation matching the spoken beat, dramatic action, vibrant 3D renders, vertical 9:16 aspect ratio]"\n'
+        '      "script_beat": "[Scene 1 narration]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Close-up portrait of stylized person looking shocked, bright dramatic cinematic lighting, highly detailed 3D character, vertical 9:16 aspect ratio"\n'
         '    },\n'
         '    {\n'
-        '      "script_beat": "[The exact script spoken during this second 8-9 second scene]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Cinematic [detailed camera view of what escalates, stylized 3D people react, highly detailed 3D assets, dark volumetric lighting, vertical 9:16 aspect ratio]"\n'
+        '      "script_beat": "[Scene 2 narration]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Medium shot showing sudden escalation, stylized people in panic, dark volumetric lighting, vertical 9:16 aspect ratio"\n'
         '    },\n'
         '    {\n'
-        '      "script_beat": "[The exact script spoken during this third 8-9 second scene]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Low angle [detailed 3D escalation, shocking event, stylized cinematic characters fleeing or panicking, bright action lighting, vertical 9:16 aspect ratio]"\n'
+        '      "script_beat": "[Scene 3 narration]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Wide cinematic angle of global catastrophe unfolding, stylized 3D earth environment, eerie glowing atmosphere, vertical 9:16 aspect ratio"\n'
         '    },\n'
         '    {\n'
-        '      "script_beat": "[The climax script spoken during this last 8-9 second scene]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Extremely dramatic close-up [final shocking climax twist, stylized characters, dark atmospheric volumetric glow, high-intensity cinematic 3D, vertical 9:16 aspect ratio]"\n'
+        '      "script_beat": "[Scene 4 narration]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Extreme close-up of stylized person realizing a terrifying truth, intense dramatic shadows, high detail 3D render, vertical 9:16 aspect ratio"\n'
+        '    },\n'
+        '    {\n'
+        '      "script_beat": "[Scene 5 narration]",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Climactic shocking twist finale, stylized characters freezing in place, apocalyptic volumetric lighting, vertical 9:16 aspect ratio"\n'
         '    }\n'
         '  ]\n'
         "}"
@@ -58,29 +62,37 @@ def generate_ai_content():
 def make_voice(text):
     print("Generating voiceover via Google TTS...")
     tts = gTTS(text=text, lang='en', tld='com', slow=False)
-    tts.save("audio.mp3")
-    print("Voiceover saved successfully to audio.mp3")
+    tts.save("temp_raw.mp3")
+    
+    # Use FFmpeg to lower voice pitch into a deep, authoritative male narrator tone
+    print("Applying deep male voice filter via FFmpeg...")
+    cmd = [
+        "ffmpeg", "-y", "-i", "temp_raw.mp3",
+        "-filter:a", "asetrate=24000*0.82,aresample=24000,atempo=1/0.82",
+        "audio.mp3"
+    ]
+    subprocess.run(cmd, check=True)
+    print("Male voiceover ready: audio.mp3")
 
 
 def fetch_scene_images(scenes):
-    print("Fetching scene-specific AI images from Pollinations AI...")
+    print(f"Fetching {len(scenes)} scene-specific AI images from Pollinations AI...")
     for index, scene in enumerate(scenes):
         prompt = scene['image_prompt']
-        # URL encode prompt
         encoded_prompt = requests.utils.quote(prompt)
         url = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&seed={random.randint(1,9999999)}"
         
         try:
-            print(f"Downloading Image for Scene {index+1}: {scene['script_beat'][:50]}...")
-            res = requests.get(url, timeout=30)
+            print(f"Downloading Image {index+1}/{len(scenes)}: {scene['script_beat'][:40]}...")
+            res = requests.get(url, timeout=35)
             if res.status_code == 200:
                 with open(f"scene_{index}.jpg", "wb") as f:
                     f.write(res.content)
             else:
-                raise RuntimeError(f"Failed to generate image, status: {res.status_code}")
+                raise RuntimeError(f"HTTP {res.status_code}")
         except Exception as e:
-            print(f"Error on Scene {index+1}, generating emergency color block: {e}")
-            img = Image.new('RGB', (1080, 1920), color=(15, 15, 25 + index * 10))
+            print(f"Fallback generated for Scene {index+1}: {e}")
+            img = Image.new('RGB', (1080, 1920), color=(15 + index * 10, 15, 30))
             img.save(f"scene_{index}.jpg")
 
 
@@ -93,22 +105,22 @@ def mix_video_with_subtitles(metadata):
     duration_per_scene = total_duration / num_scenes
     
     scene_clips = []
-    
     for i in range(num_scenes):
-        start_t = i * duration_per_scene
-        # Let image clip go slightly over or match the endpoint
-        clip_dur = duration_per_scene if i < num_scenes - 1 else (total_duration - start_t)
+        # Build individual clip per scene
+        img_clip = (ImageClip(f"scene_{i}.jpg")
+                    .set_duration(duration_per_scene)
+                    .resize((1080, 1920)))
         
-        # Load the generated AI image for this scene
-        img_clip = ImageClip(f"scene_{i}.jpg").set_duration(clip_dur).set_start(start_t)
-        
-        # Add a subtle, slow continuous 3D Zoom motion (Ken Burns)
-        # Slow zoom factor from 1.0 to 1.15 over duration
-        img_clip = img_clip.resize(lambda t: 1.0 + 0.15 * (t / clip_dur))
-        
+        # Subtle slow zoom effect for camera motion
+        img_clip = img_clip.resize(lambda t, dur=duration_per_scene: 1.0 + 0.12 * (t / dur))
         scene_clips.append(img_clip)
         
-    print("Layering text phrases on top of animated scenes...")
+    # Concatenate all 5 clips so they play sequentially
+    print("Stitching all 5 scene clips sequentially...")
+    background_track = concatenate_videoclips(scene_clips, method="compose")
+    background_track = background_track.set_duration(total_duration)
+    
+    print("Generating synchronous subtitles...")
     words = metadata["voice_script"].split()
     phrases = [" ".join(words[i:i+3]) for i in range(0, len(words), 3)]
     duration_per_phrase = total_duration / len(phrases)
@@ -118,19 +130,19 @@ def mix_video_with_subtitles(metadata):
     for phrase in phrases:
         txt_clip = TextClip(
             phrase.upper(),
-            fontsize=55,
+            fontsize=60,
             color='yellow',
             font='DejaVu-Sans-Bold',
             stroke_color='black',
-            stroke_width=3,
+            stroke_width=4,
             method='caption',
-            size=(960, None) # Stay in portrait screen boundary
+            size=(960, None)
         )
         txt_clip = txt_clip.set_start(current_time).set_duration(duration_per_phrase).set_pos('center')
         text_clips.append(txt_clip)
         current_time += duration_per_phrase
         
-    final_video = CompositeVideoClip(scene_clips + text_clips)
+    final_video = CompositeVideoClip([background_track] + text_clips, size=(1080, 1920))
     final_video = final_video.set_audio(audio)
     final_video.write_videofile("final.mp4", fps=24, codec="libx264", audio_codec="aac")
 
@@ -163,16 +175,16 @@ def post_to_youtube(metadata):
 
 
 if __name__ == "__main__":
-    print("1. Generating AI content & Scene Breakdown...")
+    print("1. Generating AI content & 5-Scene Breakdown...")
     meta = generate_ai_content()
     
-    print("2. Generating voiceover...")
+    print("2. Generating Male Voiceover...")
     make_voice(meta['voice_script'])
     
-    print("3. Generating scene-specific visual frames...")
+    print("3. Generating 5 Scene Visuals...")
     fetch_scene_images(meta['scenes'])
     
-    print("4. Rendering Video with camera motion & dynamic subtitles...")
+    print("4. Rendering 5-Scene Video with Zoom & Subtitles...")
     mix_video_with_subtitles(meta)
     
     print("5. Uploading to YouTube...")
