@@ -13,7 +13,7 @@ PIXABAY_KEY = os.environ.get("PEXELS_API_KEY")
 
 def generate_ai_content():
     genai.configure(api_key=GEMINI_KEY)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-3.8-flash')
     
     prompt = (
         "You are a viral YouTube Shorts creator specializing in the 'What If' mystery niche. "
