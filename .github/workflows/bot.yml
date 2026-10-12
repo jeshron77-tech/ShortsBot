@@ -1,0 +1,34 @@
+name: Run YouTube Shorts Bot
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # Runs every day at 10:00 AM UTC (adjust time as needed)
+  workflow_dispatch: # Allows you to run it manually with a click anytime!
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
+
+      - name: Inject Secrets & Run Bot
+        env:
+          CLIENT_SECRETS_DATA: ${{ secrets.CLIENT_SECRETS }}
+          TOKEN_JSON_DATA: ${{ secrets.TOKEN_JSON }}
+        run: |
+          # Recreate client_secrets.json and token.json securely from GitHub secrets on the fly
+          echo "$CLIENT_SECRETS_DATA" > client_secrets.json
+          echo "$TOKEN_JSON_DATA" > token.json
+          
+          # Run your main script
+          python main.py
