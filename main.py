@@ -2,6 +2,12 @@
 import json
 import requests
 import random
+from PIL import Image
+
+# Fix Pillow 10+ backwards compatibility for MoviePy
+if not hasattr(Image, 'ANTIALIAS'):
+    Image.ANTIALIAS = Image.Resampling.LANCZOS
+
 from gtts import gTTS
 import google.generativeai as genai
 from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ColorClip
@@ -70,7 +76,6 @@ def fetch_background(duration=35):
     except Exception as e:
         print(f"Pixabay request notice: {e}")
 
-    # Rock-solid fallback: generate a 1080x1920 vertical canvas so the pipeline never stops
     print("Using dynamic vertical canvas for background...")
     clip = ColorClip(size=(1080, 1920), color=(15, 15, 25), duration=duration)
     clip.write_videofile("bg.mp4", fps=24, codec="libx264")
@@ -80,7 +85,6 @@ def mix_video_with_subtitles(metadata):
     audio = AudioFileClip("audio.mp3")
     video = VideoFileClip("bg.mp4")
     
-    # Loop or trim background to match exact voiceover duration
     if video.duration < audio.duration:
         video = video.loop(duration=audio.duration)
     else:
