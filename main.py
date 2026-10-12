@@ -2,6 +2,7 @@
 import json
 import requests
 import random
+import time
 import subprocess
 from PIL import Image
 
@@ -32,23 +33,28 @@ def generate_ai_content():
         '  "scenes": [\n'
         '    {\n'
         '      "script_beat": "[Scene 1 narration]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Close-up portrait of stylized person looking shocked, bright dramatic cinematic lighting, highly detailed 3D character, vertical 9:16 aspect ratio"\n'
+        '      "search_keyword": "shocked person looking scared 3d animation dramatic face portrait",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Close-up portrait of stylized person looking shocked, dramatic cinematic lighting, vertical 9:16 aspect ratio"\n'
         '    },\n'
         '    {\n'
         '      "script_beat": "[Scene 2 narration]",\n'
+        '      "search_keyword": "panic crowd city chaos night darkness emergency",\n'
         '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Medium shot showing sudden escalation, stylized people in panic, dark volumetric lighting, vertical 9:16 aspect ratio"\n'
         '    },\n'
         '    {\n'
         '      "script_beat": "[Scene 3 narration]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Wide cinematic angle of global catastrophe unfolding, stylized 3D earth environment, eerie glowing atmosphere, vertical 9:16 aspect ratio"\n'
+        '      "search_keyword": "planet earth disaster apocalyptic atmosphere dark glowing",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Wide cinematic angle of global catastrophe unfolding, stylized 3D earth environment, vertical 9:16 aspect ratio"\n'
         '    },\n'
         '    {\n'
         '      "script_beat": "[Scene 4 narration]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Extreme close-up of stylized person realizing a terrifying truth, intense dramatic shadows, high detail 3D render, vertical 9:16 aspect ratio"\n'
+        '      "search_keyword": "terrified human face shadows intense nightmare",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Extreme close-up of stylized person realizing a terrifying truth, intense dramatic shadows, vertical 9:16 aspect ratio"\n'
         '    },\n'
         '    {\n'
         '      "script_beat": "[Scene 5 narration]",\n'
-        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Climactic shocking twist finale, stylized characters freezing in place, apocalyptic volumetric lighting, vertical 9:16 aspect ratio"\n'
+        '      "search_keyword": "mystery silhouette void cosmic strange final anomaly",\n'
+        '      "image_prompt": "3D animated style, Zack D. Films aesthetic. Climactic shocking twist finale, stylized characters freezing in place, vertical 9:16 aspect ratio"\n'
         '    }\n'
         '  ]\n'
         "}"
@@ -61,39 +67,78 @@ def generate_ai_content():
 
 def make_voice(text):
     print("Generating voiceover via Google TTS...")
+    # Generate base voice
     tts = gTTS(text=text, lang='en', tld='com', slow=False)
     tts.save("temp_raw.mp3")
     
-    # Use FFmpeg to lower voice pitch into a deep, authoritative male narrator tone
-    print("Applying deep male voice filter via FFmpeg...")
+    # Pitch shift with FFmpeg: asetrate shifts pitch down, atempo normalizes playback speed
+    print("Applying deep male narrator pitch transform via FFmpeg...")
     cmd = [
-        "ffmpeg", "-y", "-i", "temp_raw.mp3",
-        "-filter:a", "asetrate=24000*0.82,aresample=24000,atempo=1/0.82",
+        "ffmpeg", "-y",
+        "-i", "temp_raw.mp3",
+        "-af", "asetrate=24000*0.80,aresample=24000,atempo=1.25",
         "audio.mp3"
     ]
-    subprocess.run(cmd, check=True)
-    print("Male voiceover ready: audio.mp3")
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"FFmpeg audio filter warning: {res.stderr}")
+        os.rename("temp_raw.mp3", "audio.mp3")
+    else:
+        print("Deep male voiceover generated successfully: audio.mp3")
 
 
 def fetch_scene_images(scenes):
-    print(f"Fetching {len(scenes)} scene-specific AI images from Pollinations AI...")
+    print(f"Fetching {len(scenes)} distinct scene images...")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    
     for index, scene in enumerate(scenes):
-        prompt = scene['image_prompt']
+        downloaded = False
+        
+        # 1. Primary Source: Pollinations AI with clean prompt
+        prompt = scene.get('image_prompt', '3D dramatic cinematic animation character scene')
         encoded_prompt = requests.utils.quote(prompt)
-        url = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&seed={random.randint(1,9999999)}"
+        pollinations_url = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&nologo=true&seed={random.randint(1000, 999999)}"
         
         try:
-            print(f"Downloading Image {index+1}/{len(scenes)}: {scene['script_beat'][:40]}...")
-            res = requests.get(url, timeout=35)
-            if res.status_code == 200:
+            print(f"Trying Pollinations for Scene {index+1}...")
+            r = requests.get(pollinations_url, headers=headers, timeout=25)
+            if r.status_code == 200 and len(r.content) > 5000:
                 with open(f"scene_{index}.jpg", "wb") as f:
-                    f.write(res.content)
-            else:
-                raise RuntimeError(f"HTTP {res.status_code}")
+                    f.write(r.content)
+                downloaded = True
+                print(f"Scene {index+1} downloaded from Pollinations!")
         except Exception as e:
-            print(f"Fallback generated for Scene {index+1}: {e}")
-            img = Image.new('RGB', (1080, 1920), color=(15 + index * 10, 15, 30))
-            img.save(f"scene_{index}.jpg")
+            print(f"Pollinations error on Scene {index+1}: {e}")
+            
+        # 2. Secondary Source: Unsplash Source fallback (Guaranteed real image)
+        if not downloaded:
+            keyword = scene.get('search_keyword', 'mystery,dark').replace(' ', ',')
+            unsplash_url = f"https://source.unsplash.com/1080x1920/?{keyword}"
+            try:
+                print(f"Using secondary HD image source for Scene {index+1} ({keyword})...")
+                r = requests.get(unsplash_url, headers=headers, timeout=20)
+                if r.status_code == 200 and len(r.content) > 5000:
+                    with open(f"scene_{index}.jpg", "wb") as f:
+                        f.write(r.content)
+                    downloaded = True
+                    print(f"Scene {index+1} downloaded from secondary source!")
+            except Exception as e:
+                print(f"Secondary source error on Scene {index+1}: {e}")
+
+        # 3. Last-resort fallback: If both network calls failed, copy from scene 0 rather than a black canvas
+        if not downloaded:
+            print(f"Re-using prior image for Scene {index+1} to avoid dark canvas...")
+            if index > 0 and os.path.exists("scene_0.jpg"):
+                with open("scene_0.jpg", "rb") as fsrc, open(f"scene_{index}.jpg", "wb") as fdst:
+                    fdst.write(fsrc.read())
+            else:
+                img = Image.new('RGB', (1080, 1920), color=(20, 20, 45))
+                img.save(f"scene_{index}.jpg")
+                
+        # Pause 2 seconds between requests to avoid rate limits
+        time.sleep(2)
 
 
 def mix_video_with_subtitles(metadata):
@@ -106,16 +151,15 @@ def mix_video_with_subtitles(metadata):
     
     scene_clips = []
     for i in range(num_scenes):
-        # Build individual clip per scene
-        img_clip = (ImageClip(f"scene_{i}.jpg")
-                    .set_duration(duration_per_scene)
-                    .resize((1080, 1920)))
+        img_path = f"scene_{i}.jpg"
+        clip_dur = duration_per_scene if i < num_scenes - 1 else (total_duration - (i * duration_per_scene))
         
-        # Subtle slow zoom effect for camera motion
-        img_clip = img_clip.resize(lambda t, dur=duration_per_scene: 1.0 + 0.12 * (t / dur))
+        img = Image.open(img_path).resize((1080, 1920))
+        img.save(img_path)
+        
+        img_clip = ImageClip(img_path).set_duration(clip_dur)
         scene_clips.append(img_clip)
         
-    # Concatenate all 5 clips so they play sequentially
     print("Stitching all 5 scene clips sequentially...")
     background_track = concatenate_videoclips(scene_clips, method="compose")
     background_track = background_track.set_duration(total_duration)
@@ -181,10 +225,10 @@ if __name__ == "__main__":
     print("2. Generating Male Voiceover...")
     make_voice(meta['voice_script'])
     
-    print("3. Generating 5 Scene Visuals...")
+    print("3. Fetching 5 Distinct Scene Images...")
     fetch_scene_images(meta['scenes'])
     
-    print("4. Rendering 5-Scene Video with Zoom & Subtitles...")
+    print("4. Rendering 5-Scene Video & Subtitles...")
     mix_video_with_subtitles(meta)
     
     print("5. Uploading to YouTube...")
