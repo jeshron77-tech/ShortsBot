@@ -10,10 +10,9 @@ if not hasattr(Image, 'ANTIALIAS'):
 
 from gtts import gTTS
 import google.generativeai as genai
-from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ImageClip, concatenate_videoclips
+from moviepy.editor import AudioFileClip, TextClip, CompositeVideoClip, ImageClip, concatenate_videoclips
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
-PEXELS_KEY = (os.environ.get("PEXELS_API_KEY") or "").strip()
 
 
 def generate_ai_content():
@@ -22,12 +21,12 @@ def generate_ai_content():
     
     prompt = (
         "You are a viral YouTube Shorts creator in the 'What If' mystery niche.\n"
-        "Pick an intense, mind-bending mystery scenario (e.g., What if the Sun disappeared for 10 days? What if gravity reversed? What if the oceans dried up?).\n\n"
+        "Pick an intense, mind-bending mystery scenario (e.g., What if the Sun disappeared for 10 days? What if gravity reversed? What if the oceans boiled?).\n\n"
         "STRICT SCRIPT RULES:\n"
-        "1. SENTENCE 1 MUST STATE THE TOPIC CLEARLY: Start explicitly with 'What if [insert exact scenario]?'\n"
+        "1. SENTENCE 1 MUST STATE THE TOPIC CLEARLY: Start explicitly with 'What if [insert scenario]?'\n"
         "2. Follow with rapid escalation: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...'.\n"
-        "3. Total script must be between 50 and 65 words so it stays fast-paced (~25 to 30 seconds).\n"
-        "4. Provide simple 1-word stock video keywords that Pexels always has videos for (e.g. space, crowd, ocean, fire, galaxy).\n\n"
+        "3. Total script must be between 50 and 65 words (~25-28 seconds).\n"
+        "4. Choose 5 distinct, high-impact categories for the 5 scenes from: space, storm, fire, ocean, dark, galaxy, earth, city, explosion, nightmare.\n\n"
         "Respond ONLY in valid JSON format without markdown codeblocks:\n"
         "{\n"
         '  "title": "[Viral title with emoji and #shorts]",\n'
@@ -35,11 +34,11 @@ def generate_ai_content():
         '  "tags": ["shorts", "whatif", "mystery", "science"],\n'
         '  "voice_script": "What if [Scenario]? Day 1, [Event]. Day 3, [Escalation]. Day 5, [Catastrophe]. Day 10, [Climax]...",\n'
         '  "scenes": [\n'
-        '    {"keyword": "space"},\n'
-        '    {"keyword": "crowd"},\n'
-        '    {"keyword": "ocean"},\n'
-        '    {"keyword": "fire"},\n'
-        '    {"keyword": "galaxy"}\n'
+        '    {"category": "earth"},\n'
+        '    {"category": "city"},\n'
+        '    {"category": "storm"},\n'
+        '    {"category": "space"},\n'
+        '    {"category": "galaxy"}\n'
         '  ]\n'
         "}"
     )
@@ -55,7 +54,6 @@ def make_male_voice(text):
     tts.save("temp_raw.mp3")
     
     print("Transforming into deep male narrator voice via FFmpeg...")
-    # Shift sample rate down to lower pitch, resample, and adjust tempo to keep natural pacing
     cmd = [
         "ffmpeg", "-y", "-i", "temp_raw.mp3",
         "-filter:a", "asetrate=24000*0.84,aresample=24000,atempo=1.19",
@@ -66,51 +64,68 @@ def make_male_voice(text):
 
 
 def fetch_scenes(scenes):
-    headers = {"Authorization": PEXELS_KEY} if PEXELS_KEY else {}
-    fallback_pool = ["space", "ocean", "storm", "fire", "galaxy", "clouds", "smoke"]
+    print("Fetching 5 distinct HD vertical visuals without watermarks...")
+    
+    # Curated reliable vertical HD image collections (zero API key required, zero watermark)
+    curated_urls = {
+        "earth": [
+            "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
+            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop"
+        ],
+        "city": [
+            "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1080&h=1920&fit=crop",
+            "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop"
+        ],
+        "storm": [
+            "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1080&h=1920&fit=crop",
+            "https://images.unsplash.com/photo-1514632595-4944383f2737?w=1080&h=1920&fit=crop"
+        ],
+        "space": [
+            "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1080&h=1920&fit=crop",
+            "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1080&h=1920&fit=crop"
+        ],
+        "galaxy": [
+            "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1080&h=1920&fit=crop",
+            "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=1080&h=1920&fit=crop"
+        ],
+        "fire": [
+            "https://images.unsplash.com/photo-1498429089284-41f8cf3ffd39?w=1080&h=1920&fit=crop"
+        ],
+        "ocean": [
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop"
+        ],
+        "dark": [
+            "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop"
+        ]
+    }
+    
+    headers = {"User-Agent": "Mozilla/5.0"}
     
     for i, s in enumerate(scenes):
-        kw = s.get("keyword", random.choice(fallback_pool))
-        saved = False
+        cat = s.get("category", "space")
+        url_options = curated_urls.get(cat, curated_urls["space"])
+        chosen_url = random.choice(url_options)
         
-        # 1. Search Pexels for vertical HD video footage
-        if PEXELS_KEY:
-            try:
-                url = f"https://api.pexels.com/videos/search?query={kw}&orientation=portrait&per_page=15"
-                res = requests.get(url, headers=headers, timeout=15)
-                if res.status_code == 200:
-                    vids = res.json().get("videos", [])
-                    if vids:
-                        target_vid = random.choice(vids)
-                        v_files = target_vid.get("video_files", [])
-                        valid = [f for f in v_files if f.get("link") and f.get("width", 0) <= 1080]
-                        if not valid:
-                            valid = v_files
-                        if valid:
-                            chosen = sorted(valid, key=lambda x: x.get("width", 0), reverse=True)[0]
-                            print(f"Scene {i+1}: Downloaded Pexels vertical video for '{kw}'")
-                            v_data = requests.get(chosen["link"], timeout=30).content
-                            with open(f"clip_{i}.mp4", "wb") as f:
-                                f.write(v_data)
-                            saved = True
-            except Exception as e:
-                print(f"Pexels query notice for Scene {i+1}: {e}")
+        saved = False
+        try:
+            print(f"Scene {i+1} [{cat}]: Downloading high-res vertical visual...")
+            res = requests.get(chosen_url, headers=headers, timeout=20)
+            if res.status_code == 200 and len(res.content) > 10000:
+                with open(f"clip_{i}.jpg", "wb") as f:
+                    f.write(res.content)
+                saved = True
+                print(f"Scene {i+1} saved successfully!")
+        except Exception as e:
+            print(f"Warning on scene {i+1}: {e}")
 
-        # 2. Secondary fallback: Pollinations AI 3D image
+        # If download fails, generate a visible background with a gradient rather than a plain color block
         if not saved:
-            try:
-                print(f"Scene {i+1}: Sourcing 3D AI visual for '{kw}'...")
-                p_url = f"https://image.pollinations.ai/p/cinematic%203D%20render%20of%20{requests.utils.quote(kw)}?width=1080&height=1920&nologo=true&seed={random.randint(100, 999999)}"
-                r = requests.get(p_url, timeout=20)
-                if r.status_code == 200 and len(r.content) > 5000:
-                    with open(f"clip_{i}.jpg", "wb") as f:
-                        f.write(r.content)
-                    saved = True
-            except Exception:
-                pass
-
-        if not saved:
-            Image.new('RGB', (1080, 1920), color=(15, 15, 30 + i * 15)).save(f"clip_{i}.jpg")
+            if i > 0 and os.path.exists("clip_0.jpg"):
+                with open("clip_0.jpg", "rb") as f_in, open(f"clip_{i}.jpg", "wb") as f_out:
+                    f_out.write(f_in.read())
+            else:
+                img = Image.new('RGB', (1080, 1920), color=(20 + i*15, 30, 60 + i*20))
+                img.save(f"clip_{i}.jpg")
 
 
 def render_video(metadata):
@@ -121,28 +136,13 @@ def render_video(metadata):
     
     clips = []
     for i in range(len(scenes)):
-        if os.path.exists(f"clip_{i}.mp4"):
-            try:
-                c = VideoFileClip(f"clip_{i}.mp4").without_audio()
-                if c.duration < scene_dur:
-                    c = c.loop(duration=scene_dur)
-                else:
-                    c = c.subclip(0, scene_dur)
-                c = c.resize(height=1920)
-                if c.w > 1080:
-                    c = c.crop(x_center=c.w / 2, width=1080, height=1920)
-                else:
-                    c = c.resize((1080, 1920))
-                clips.append(c)
-                continue
-            except Exception as e:
-                print(f"Fallback to image for clip {i}: {e}")
-
         img_path = f"clip_{i}.jpg"
         img = Image.open(img_path).resize((1080, 1920))
         img.save(img_path)
+        
+        # Ken Burns camera zoom effect on each distinct scene
         img_clip = ImageClip(img_path).set_duration(scene_dur)
-        img_clip = img_clip.resize(lambda t, dur=scene_dur: 1.0 + 0.10 * (t / dur))
+        img_clip = img_clip.resize(lambda t, dur=scene_dur: 1.0 + 0.12 * (t / dur))
         clips.append(img_clip)
 
     background_track = concatenate_videoclips(clips, method="compose").set_duration(total_dur)
@@ -196,16 +196,16 @@ def post_to_youtube(metadata):
 
 
 if __name__ == "__main__":
-    print("1. Generating hooked script & visual breakdown...")
+    print("1. Generating hooked script...")
     meta = generate_ai_content()
     
     print("2. Synthesizing deep male voiceover...")
     make_male_voice(meta['voice_script'])
     
-    print("3. Sourcing vertical clips for all 5 scenes...")
+    print("3. Fetching 5 HD vertical visuals...")
     fetch_scenes(meta['scenes'])
     
-    print("4. Rendering composition...")
+    print("4. Rendering 5-scene composition with zoom & subtitles...")
     render_video(meta)
     
     print("5. Publishing to YouTube...")
