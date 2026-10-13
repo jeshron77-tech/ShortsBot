@@ -2,13 +2,13 @@
 import json
 import requests
 import random
-import asyncio
+import subprocess
 from PIL import Image
 
 if not hasattr(Image, 'ANTIALIAS'):
     Image.ANTIALIAS = Image.Resampling.LANCZOS
 
-import edge_tts
+from gtts import gTTS
 import google.generativeai as genai
 from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ImageClip, concatenate_videoclips
 
@@ -22,24 +22,24 @@ def generate_ai_content():
     
     prompt = (
         "You are a viral YouTube Shorts creator in the 'What If' mystery niche.\n"
-        "Pick an intense, mind-bending scenario (e.g. What if the Sun disappeared for 10 days? What if gravity reversed? What if sleep was illegal?).\n\n"
+        "Pick an intense, mind-bending mystery scenario (e.g., What if the Sun disappeared for 10 days? What if gravity reversed? What if the oceans dried up?).\n\n"
         "STRICT SCRIPT RULES:\n"
         "1. SENTENCE 1 MUST STATE THE TOPIC CLEARLY: Start explicitly with 'What if [insert exact scenario]?'\n"
         "2. Follow with rapid escalation: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...'.\n"
-        "3. Keep total script length under 65 words so it stays fast-paced (~25 to 30 seconds).\n"
-        "4. Provide simple 1-2 word stock video search terms for each scene so Pexels finds real HD videos.\n\n"
-        "Respond ONLY in valid JSON format without markdown blocks:\n"
+        "3. Total script must be between 50 and 65 words so it stays fast-paced (~25 to 30 seconds).\n"
+        "4. Provide simple 1-word stock video keywords that Pexels always has videos for (e.g. space, crowd, ocean, fire, galaxy).\n\n"
+        "Respond ONLY in valid JSON format without markdown codeblocks:\n"
         "{\n"
         '  "title": "[Viral title with emoji and #shorts]",\n'
         '  "description": "[Cliffhanger description for comments]",\n'
         '  "tags": ["shorts", "whatif", "mystery", "science"],\n'
         '  "voice_script": "What if [Scenario]? Day 1, [Event]. Day 3, [Escalation]. Day 5, [Catastrophe]. Day 10, [Climax]...",\n'
         '  "scenes": [\n'
-        '    {"keyword": "space earth"},\n'
-        '    {"keyword": "panic crowd"},\n'
-        '    {"keyword": "storm disaster"},\n'
-        '    {"keyword": "fire destruction"},\n'
-        '    {"keyword": "galaxy void"}\n'
+        '    {"keyword": "space"},\n'
+        '    {"keyword": "crowd"},\n'
+        '    {"keyword": "ocean"},\n'
+        '    {"keyword": "fire"},\n'
+        '    {"keyword": "galaxy"}\n'
         '  ]\n'
         "}"
     )
@@ -49,49 +49,58 @@ def generate_ai_content():
     return json.loads(clean_text)
 
 
-async def make_male_voice(text):
-    print("Synthesizing deep male voiceover with Edge-TTS...")
-    communicate = edge_tts.Communicate(text, "en-US-ChristopherNeural", rate="+6%", pitch="-5Hz")
-    await communicate.save("audio.mp3")
-    print("Voiceover saved successfully to audio.mp3")
+def make_male_voice(text):
+    print("Synthesizing base narration via Google TTS...")
+    tts = gTTS(text=text, lang='en', tld='com', slow=False)
+    tts.save("temp_raw.mp3")
+    
+    print("Transforming into deep male narrator voice via FFmpeg...")
+    # Shift sample rate down to lower pitch, resample, and adjust tempo to keep natural pacing
+    cmd = [
+        "ffmpeg", "-y", "-i", "temp_raw.mp3",
+        "-filter:a", "asetrate=24000*0.84,aresample=24000,atempo=1.19",
+        "audio.mp3"
+    ]
+    subprocess.run(cmd, check=True)
+    print("Deep male voiceover ready: audio.mp3")
 
 
 def fetch_scenes(scenes):
     headers = {"Authorization": PEXELS_KEY} if PEXELS_KEY else {}
-    fallback_terms = ["space", "storm", "fire", "ocean", "darkness", "earth", "clouds"]
+    fallback_pool = ["space", "ocean", "storm", "fire", "galaxy", "clouds", "smoke"]
     
     for i, s in enumerate(scenes):
-        kw = s.get("keyword", random.choice(fallback_terms))
+        kw = s.get("keyword", random.choice(fallback_pool))
         saved = False
         
-        # Search Pexels for vertical HD video footage
+        # 1. Search Pexels for vertical HD video footage
         if PEXELS_KEY:
             try:
-                url = f"https://api.pexels.com/videos/search?query={kw}&orientation=portrait&per_page=10"
+                url = f"https://api.pexels.com/videos/search?query={kw}&orientation=portrait&per_page=15"
                 res = requests.get(url, headers=headers, timeout=15)
                 if res.status_code == 200:
                     vids = res.json().get("videos", [])
                     if vids:
                         target_vid = random.choice(vids)
                         v_files = target_vid.get("video_files", [])
-                        valid = [f for f in v_files if f.get("link") and f.get("height", 0) >= f.get("width", 0)]
+                        valid = [f for f in v_files if f.get("link") and f.get("width", 0) <= 1080]
                         if not valid:
                             valid = v_files
                         if valid:
-                            chosen = sorted(valid, key=lambda x: x.get("width", 0))[0]
-                            print(f"Scene {i+1}: Found Pexels video for '{kw}'")
+                            chosen = sorted(valid, key=lambda x: x.get("width", 0), reverse=True)[0]
+                            print(f"Scene {i+1}: Downloaded Pexels vertical video for '{kw}'")
                             v_data = requests.get(chosen["link"], timeout=30).content
                             with open(f"clip_{i}.mp4", "wb") as f:
                                 f.write(v_data)
                             saved = True
             except Exception as e:
-                print(f"Notice on Pexels Scene {i+1}: {e}")
+                print(f"Pexels query notice for Scene {i+1}: {e}")
 
-        # Secondary fallback: Pollinations AI vertical image with zoom
+        # 2. Secondary fallback: Pollinations AI 3D image
         if not saved:
             try:
-                print(f"Scene {i+1}: Sourcing high-res visual for '{kw}'...")
-                p_url = f"https://image.pollinations.ai/p/cinematic%20dramatic%203D%20render%20{requests.utils.quote(kw)}?width=1080&height=1920&nologo=true&seed={random.randint(100, 999999)}"
+                print(f"Scene {i+1}: Sourcing 3D AI visual for '{kw}'...")
+                p_url = f"https://image.pollinations.ai/p/cinematic%203D%20render%20of%20{requests.utils.quote(kw)}?width=1080&height=1920&nologo=true&seed={random.randint(100, 999999)}"
                 r = requests.get(p_url, timeout=20)
                 if r.status_code == 200 and len(r.content) > 5000:
                     with open(f"clip_{i}.jpg", "wb") as f:
@@ -122,10 +131,12 @@ def render_video(metadata):
                 c = c.resize(height=1920)
                 if c.w > 1080:
                     c = c.crop(x_center=c.w / 2, width=1080, height=1920)
+                else:
+                    c = c.resize((1080, 1920))
                 clips.append(c)
                 continue
             except Exception as e:
-                print(f"MoviePy fallback to image for clip {i}: {e}")
+                print(f"Fallback to image for clip {i}: {e}")
 
         img_path = f"clip_{i}.jpg"
         img = Image.open(img_path).resize((1080, 1920))
@@ -188,8 +199,8 @@ if __name__ == "__main__":
     print("1. Generating hooked script & visual breakdown...")
     meta = generate_ai_content()
     
-    print("2. Synthesizing voiceover...")
-    asyncio.run(make_male_voice(meta['voice_script']))
+    print("2. Synthesizing deep male voiceover...")
+    make_male_voice(meta['voice_script'])
     
     print("3. Sourcing vertical clips for all 5 scenes...")
     fetch_scenes(meta['scenes'])
