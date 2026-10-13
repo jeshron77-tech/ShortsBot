@@ -26,7 +26,7 @@ def generate_ai_content():
         "1. SENTENCE 1 MUST STATE THE TOPIC CLEARLY: Start explicitly with 'What if [insert scenario]?'\n"
         "2. Follow with rapid escalation: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...'.\n"
         "3. Total script must be between 50 and 65 words (~25-28 seconds).\n"
-        "4. Choose 5 distinct, high-impact categories for the 5 scenes from: space, storm, fire, ocean, dark, galaxy, earth, city, explosion, nightmare.\n\n"
+        "4. Choose 5 distinct categories for the 5 scenes from: earth, city, storm, space, galaxy, ocean, fire, dark.\n\n"
         "Respond ONLY in valid JSON format without markdown codeblocks:\n"
         "{\n"
         '  "title": "[Viral title with emoji and #shorts]",\n'
@@ -49,83 +49,54 @@ def generate_ai_content():
 
 
 def make_male_voice(text):
-    print("Synthesizing base narration via Google TTS...")
+    print("Synthesizing narration via Google TTS...")
     tts = gTTS(text=text, lang='en', tld='com', slow=False)
     tts.save("temp_raw.mp3")
     
-    print("Transforming into deep male narrator voice via FFmpeg...")
+    print("Applying deep male narrator filter via FFmpeg...")
     cmd = [
         "ffmpeg", "-y", "-i", "temp_raw.mp3",
         "-filter:a", "asetrate=24000*0.84,aresample=24000,atempo=1.19",
         "audio.mp3"
     ]
     subprocess.run(cmd, check=True)
-    print("Deep male voiceover ready: audio.mp3")
+    print("Voiceover saved: audio.mp3")
 
 
 def fetch_scenes(scenes):
-    print("Fetching 5 distinct HD vertical visuals without watermarks...")
-    
-    # Curated reliable vertical HD image collections (zero API key required, zero watermark)
+    print("Downloading 5 distinct high-res visuals...")
     curated_urls = {
-        "earth": [
-            "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
-            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop"
-        ],
-        "city": [
-            "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1080&h=1920&fit=crop",
-            "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop"
-        ],
-        "storm": [
-            "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1080&h=1920&fit=crop",
-            "https://images.unsplash.com/photo-1514632595-4944383f2737?w=1080&h=1920&fit=crop"
-        ],
-        "space": [
-            "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1080&h=1920&fit=crop",
-            "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1080&h=1920&fit=crop"
-        ],
-        "galaxy": [
-            "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1080&h=1920&fit=crop",
-            "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=1080&h=1920&fit=crop"
-        ],
-        "fire": [
-            "https://images.unsplash.com/photo-1498429089284-41f8cf3ffd39?w=1080&h=1920&fit=crop"
-        ],
-        "ocean": [
-            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop"
-        ],
-        "dark": [
-            "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop"
-        ]
+        "earth": "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
+        "city": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1080&h=1920&fit=crop",
+        "storm": "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1080&h=1920&fit=crop",
+        "space": "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1080&h=1920&fit=crop",
+        "galaxy": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1080&h=1920&fit=crop",
+        "ocean": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop",
+        "fire": "https://images.unsplash.com/photo-1498429089284-41f8cf3ffd39?w=1080&h=1920&fit=crop",
+        "dark": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop"
     }
     
     headers = {"User-Agent": "Mozilla/5.0"}
+    categories = list(curated_urls.keys())
     
     for i, s in enumerate(scenes):
-        cat = s.get("category", "space")
-        url_options = curated_urls.get(cat, curated_urls["space"])
-        chosen_url = random.choice(url_options)
+        cat = s.get("category", categories[i % len(categories)])
+        url = curated_urls.get(cat, curated_urls["space"])
         
         saved = False
         try:
-            print(f"Scene {i+1} [{cat}]: Downloading high-res vertical visual...")
-            res = requests.get(chosen_url, headers=headers, timeout=20)
-            if res.status_code == 200 and len(res.content) > 10000:
+            r = requests.get(url, headers=headers, timeout=20)
+            if r.status_code == 200 and len(r.content) > 5000:
                 with open(f"clip_{i}.jpg", "wb") as f:
-                    f.write(res.content)
+                    f.write(r.content)
                 saved = True
-                print(f"Scene {i+1} saved successfully!")
+                print(f"Scene {i+1} [{cat}] downloaded.")
         except Exception as e:
-            print(f"Warning on scene {i+1}: {e}")
-
-        # If download fails, generate a visible background with a gradient rather than a plain color block
+            print(f"Scene {i+1} fetch warning: {e}")
+            
         if not saved:
-            if i > 0 and os.path.exists("clip_0.jpg"):
-                with open("clip_0.jpg", "rb") as f_in, open(f"clip_{i}.jpg", "wb") as f_out:
-                    f_out.write(f_in.read())
-            else:
-                img = Image.new('RGB', (1080, 1920), color=(20 + i*15, 30, 60 + i*20))
-                img.save(f"clip_{i}.jpg")
+            img = Image.new('RGB', (1080, 1920), color=(20 + i*15, 30, 60 + i*20))
+            img.save(f"clip_{i}.jpg")
 
 
 def render_video(metadata):
@@ -134,18 +105,18 @@ def render_video(metadata):
     scenes = metadata['scenes']
     scene_dur = total_dur / len(scenes)
     
-    clips = []
+    scene_clips = []
     for i in range(len(scenes)):
         img_path = f"clip_{i}.jpg"
         img = Image.open(img_path).resize((1080, 1920))
         img.save(img_path)
         
-        # Ken Burns camera zoom effect on each distinct scene
-        img_clip = ImageClip(img_path).set_duration(scene_dur)
-        img_clip = img_clip.resize(lambda t, dur=scene_dur: 1.0 + 0.12 * (t / dur))
-        clips.append(img_clip)
-
-    background_track = concatenate_videoclips(clips, method="compose").set_duration(total_dur)
+        # Fast, pre-sized clip without per-frame CPU lambda bottleneck
+        clip = ImageClip(img_path).set_duration(scene_dur)
+        scene_clips.append(clip)
+        
+    print("Stitching all 5 scenes together...")
+    background_track = concatenate_videoclips(scene_clips, method="compose").set_duration(total_dur)
     
     words = metadata["voice_script"].split()
     phrases = [" ".join(words[i:i+3]) for i in range(0, len(words), 3)]
@@ -166,10 +137,20 @@ def render_video(metadata):
         ).set_start(cur_t).set_duration(phrase_dur).set_pos('center')
         text_clips.append(txt)
         cur_t += phrase_dur
-
+        
     final_video = CompositeVideoClip([background_track] + text_clips, size=(1080, 1920))
     final_video = final_video.set_audio(audio)
-    final_video.write_videofile("final.mp4", fps=24, codec="libx264", audio_codec="aac")
+    
+    # Ultra-fast encoding preset for cloud runners
+    print("Encoding video with ultrafast preset...")
+    final_video.write_videofile(
+        "final.mp4",
+        fps=24,
+        codec="libx264",
+        audio_codec="aac",
+        preset="ultrafast",
+        threads=2
+    )
 
 
 def post_to_youtube(metadata):
@@ -205,7 +186,7 @@ if __name__ == "__main__":
     print("3. Fetching 5 HD vertical visuals...")
     fetch_scenes(meta['scenes'])
     
-    print("4. Rendering 5-scene composition with zoom & subtitles...")
+    print("4. Fast rendering composition...")
     render_video(meta)
     
     print("5. Publishing to YouTube...")
