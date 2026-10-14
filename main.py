@@ -48,23 +48,28 @@ def generate_ai_content():
 
 
 def make_male_voice(text):
-    print("Generating natural Zack D. Films style neural voiceover...")
+    print("Generating natural Zack D. Films style neural voiceover via Piper...")
     
-    # 1. Generate clean studio neural audio using Piper
-    cmd_piper = (
-        f'echo "{text}" | piper --model en_US-lessac-medium.onnx '
-        '--output_file temp_voice.wav'
-    )
-    subprocess.run(cmd_piper, shell=True, check=True)
+    # Write text to temporary file to avoid shell quotation collisions
+    with open("script_text.txt", "w", encoding="utf-8") as f:
+        f.write(text)
+        
+    cmd_piper = [
+        "python", "-m", "piper",
+        "--model", "en_US-lessac-medium.onnx",
+        "--output_file", "temp_voice.wav"
+    ]
+    with open("script_text.txt", "rb") as f_in:
+        subprocess.run(cmd_piper, stdin=f_in, check=True)
     
-    # 2. Apply gentle audio compression and high-end clarity EQ to match YouTube studio mics
+    # Studio compression filter for crisp YouTube narration
     cmd_ffmpeg = [
         "ffmpeg", "-y", "-i", "temp_voice.wav",
         "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2",
         "audio.mp3"
     ]
     subprocess.run(cmd_ffmpeg, check=True)
-    print("Zack D. Films style voice ready: audio.mp3")
+    print("Zack D. Films style voice generated: audio.mp3")
 
 
 def fetch_and_animate_scenes(scenes, duration_per_scene):
