@@ -13,24 +13,45 @@ from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVide
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
+FALLBACK_SCRIPTS = [
+    {
+        "title": "What If Earth Stopped Spinning for 10 Days? 🌍😱 #shorts",
+        "description": "What would happen if our planet suddenly locked in place? Watch till the end!",
+        "tags": ["shorts", "whatif", "mystery", "science"],
+        "voice_script": "What if Earth stopped spinning for 10 days? Day 1, supersonic winds obliterate every skyscraper and city on the equator. Day 3, oceans shift violently toward the poles, swallowing Europe and Antarctica under titanic water walls. Day 5, one half freezes into endless arctic darkness while the other roasts. Day 10, the magnetic shield collapses completely.",
+        "scenes": [{"category": "earth"}, {"category": "ruins"}, {"category": "storm"}, {"category": "dark"}, {"category": "space"}]
+    },
+    {
+        "title": "What If The Moon Crashed Into Earth? 🌑💥 #shorts",
+        "description": "The terrifying timeline of a lunar collision. Subscribe for more mysteries!",
+        "tags": ["shorts", "whatif", "moon", "space", "mystery"],
+        "voice_script": "What if the Moon fell toward Earth? Day 1, tidal forces unleash mile-high waves sweeping across coastlines worldwide. Day 3, extreme gravitational friction triggers thousands of volcanic eruptions simultaneously. Day 5, the Moon crosses the Roche limit, shattering into a terrifying burning ring. Day 10, lunar fragments rain fiery death onto the crust.",
+        "scenes": [{"category": "space"}, {"category": "storm"}, {"category": "fire"}, {"category": "ruins"}, {"category": "galaxy"}]
+    },
+    {
+        "title": "What If Oxygen Vanished For 5 Seconds? 💨⚠️ #shorts",
+        "description": "You might think 5 seconds is harmless, but think again! #shorts",
+        "tags": ["shorts", "whatif", "science", "danger"],
+        "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every untreated concrete building crumbles instantly to dust without its chemical binder. Second 2, the daytime sky turns pitch black as sunlight stops scattering. Second 3, everyone's inner ear ruptures from severe air pressure drops. Second 5, unbonded oceans vaporize into space.",
+        "scenes": [{"category": "ruins"}, {"category": "dark"}, {"category": "earth"}, {"category": "storm"}, {"category": "space"}]
+    }
+]
+
 
 def generate_ai_content():
-    genai.configure(api_key=GEMINI_KEY)
-    model = genai.GenerativeModel('gemini-3.8-flash')
-    
     prompt = (
         "You are Zack D. Films creating a viral YouTube Short.\n"
-        "Pick an intense, unbelievable mystery scenario.\n\n"
-        "STYLE INSTRUCTIONS:\n"
-        "1. Opening Hook: Start immediately with 'What if [insert scenario]?'\n"
-        "2. Deliver punchy, high-tension escalation: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...'.\n"
-        "3. Total script must be between 45 and 55 words (~20 to 25 seconds of clear, fast delivery).\n"
+        "Pick an intense mystery scenario.\n\n"
+        "RULES:\n"
+        "1. Sentence 1 MUST start with 'What if [Scenario]?'\n"
+        "2. Follow with rapid timeline: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...'.\n"
+        "3. Length: 45 to 55 words.\n"
         "4. Assign each scene one category from: 'earth', 'ruins', 'storm', 'space', 'galaxy', 'dark', 'fire'.\n\n"
         "Respond ONLY in valid JSON:\n"
         "{\n"
-        '  "title": "[Viral title with emoji and #shorts]",\n'
-        '  "description": "[Intense 2-sentence cliffhanger for comments]",\n'
-        '  "tags": ["shorts", "whatif", "mystery", "zackdfilms", "science"],\n'
+        '  "title": "[Title #shorts]",\n'
+        '  "description": "[Description]",\n'
+        '  "tags": ["shorts", "whatif", "mystery"],\n'
         '  "voice_script": "What if [Scenario]? Day 1, [Event]. Day 3, [Escalation]. Day 5, [Catastrophe]. Day 10, [Climax]...",\n'
         '  "scenes": [\n'
         '    {"category": "earth"},\n'
@@ -41,16 +62,29 @@ def generate_ai_content():
         '  ]\n'
         "}"
     )
+
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro']
     
-    response = model.generate_content(prompt)
-    clean_text = response.text.replace("```json", "").replace("```", "").strip()
-    return json.loads(clean_text)
+    if GEMINI_KEY:
+        genai.configure(api_key=GEMINI_KEY)
+        for model_name in models_to_try:
+            try:
+                print(f"Requesting script from {model_name}...")
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                clean_text = response.text.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(clean_text)
+                print(f"Generated successfully via {model_name}!")
+                return parsed
+            except Exception as e:
+                print(f"Model {model_name} quota/error: {e}")
+
+    print("Gemini quota reached for all models. Sourcing scenario from offline fallback library...")
+    return random.choice(FALLBACK_SCRIPTS)
 
 
 def make_male_voice(text):
     print("Generating natural Zack D. Films style neural voiceover via Piper...")
-    
-    # Write text to temporary file to avoid shell quotation collisions
     with open("script_text.txt", "w", encoding="utf-8") as f:
         f.write(text)
         
@@ -62,7 +96,6 @@ def make_male_voice(text):
     with open("script_text.txt", "rb") as f_in:
         subprocess.run(cmd_piper, stdin=f_in, check=True)
     
-    # Studio compression filter for crisp YouTube narration
     cmd_ffmpeg = [
         "ffmpeg", "-y", "-i", "temp_voice.wav",
         "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2",
@@ -74,7 +107,6 @@ def make_male_voice(text):
 
 def fetch_and_animate_scenes(scenes, duration_per_scene):
     print("Fetching themed HD visuals and rendering smooth camera zooms...")
-    
     thematic_library = {
         "earth": "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
         "ruins": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop",
@@ -181,10 +213,10 @@ def post_to_youtube(metadata):
 
 
 if __name__ == "__main__":
-    print("1. Generating Zack D. Films script...")
+    print("1. Sourcing Zack D. Films script...")
     meta = generate_ai_content()
     
-    print("2. Synthesizing neural male voice...")
+    print("2. Synthesizing Piper neural voice...")
     make_male_voice(meta['voice_script'])
     
     print("3. Assembling video and subtitles...")
