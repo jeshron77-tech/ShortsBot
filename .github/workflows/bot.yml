@@ -6,6 +6,10 @@ on:
     - cron: '0 20 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -21,7 +25,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick fonts-dejavu-core
           sudo sed -i 's/policy domain="path" rights="none" pattern="@\*"/policy domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml || true
-          # Download natural American male neural voice model
           wget -q https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx
           wget -q https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
 
@@ -39,3 +42,6 @@ jobs:
           echo "$CLIENT_SECRETS_DATA" > client_secrets.json
           echo "$TOKEN_JSON_DATA" > token.json
           python main.py
+
+      - name: 365-Day Keepalive (Prevents GitHub 60-day cron suspension)
+        uses: gautamkrishnar/keepalive-workflow@v2
