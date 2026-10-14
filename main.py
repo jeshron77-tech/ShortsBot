@@ -18,35 +18,46 @@ FALLBACK_SCRIPTS = [
         "title": "What If Earth Stopped Spinning for 10 Days? 🌍😱 #shorts",
         "description": "What would happen if our planet suddenly locked in place? Watch till the end!",
         "tags": ["shorts", "whatif", "mystery", "science"],
-        "voice_script": "What if Earth stopped spinning for 10 days? Day 1, supersonic winds obliterate every skyscraper and city on the equator. Day 3, oceans shift violently toward the poles, swallowing Europe and Antarctica under titanic water walls. Day 5, one half freezes into endless arctic darkness while the other roasts. Day 10, the magnetic shield collapses completely.",
-        "scenes": [{"category": "earth"}, {"category": "ruins"}, {"category": "storm"}, {"category": "dark"}, {"category": "space"}]
-    },
-    {
-        "title": "What If The Moon Crashed Into Earth? 🌑💥 #shorts",
-        "description": "The terrifying timeline of a lunar collision. Subscribe for more mysteries!",
-        "tags": ["shorts", "whatif", "moon", "space", "mystery"],
-        "voice_script": "What if the Moon fell toward Earth? Day 1, tidal forces unleash mile-high waves sweeping across coastlines worldwide. Day 3, extreme gravitational friction triggers thousands of volcanic eruptions simultaneously. Day 5, the Moon crosses the Roche limit, shattering into a terrifying burning ring. Day 10, lunar fragments rain fiery death onto the crust.",
-        "scenes": [{"category": "space"}, {"category": "storm"}, {"category": "fire"}, {"category": "ruins"}, {"category": "galaxy"}]
+        "voice_script": "What if Earth stopped spinning for 10 days? Day 1, supersonic winds obliterate every skyscraper and city on the equator. Day 3, oceans shift violently toward the poles, swallowing continents under titanic water walls. Day 5, one half freezes into endless arctic darkness while the other roasts. Day 10, the magnetic shield collapses completely.",
+        "scenes": [{"category": "city_ruins"}, {"category": "ocean_tsunami"}, {"category": "dark_ice"}, {"category": "space_shield"}, {"category": "earth_space"}]
     },
     {
         "title": "What If Oxygen Vanished For 5 Seconds? 💨⚠️ #shorts",
         "description": "You might think 5 seconds is harmless, but think again! #shorts",
         "tags": ["shorts", "whatif", "science", "danger"],
-        "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every untreated concrete building crumbles instantly to dust without its chemical binder. Second 2, the daytime sky turns pitch black as sunlight stops scattering. Second 3, everyone's inner ear ruptures from severe air pressure drops. Second 5, unbonded oceans vaporize into space.",
-        "scenes": [{"category": "ruins"}, {"category": "dark"}, {"category": "earth"}, {"category": "storm"}, {"category": "space"}]
+        "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every concrete building crumbles instantly into massive dust clouds. Second 2, the daytime sky turns pitch black as atmospheric sunlight stops scattering. Second 3, everyone's eardrums violently rupture from sudden air pressure collapse. Second 5, unbonded oceans instantly vaporize into space.",
+        "scenes": [{"category": "earth_space"}, {"category": "city_ruins"}, {"category": "pitch_black"}, {"category": "human_pressure"}, {"category": "ocean_tsunami"}]
+    },
+    {
+        "title": "What If The Sun Disappeared For 7 Days? ☀️❄️ #shorts",
+        "description": "The terrifying timeline if our star suddenly vanished. #shorts",
+        "tags": ["shorts", "whatif", "sun", "space", "mystery"],
+        "voice_script": "What if the Sun vanished for seven whole days? Minute 8, complete pitch blackness engulfs the globe as the final sunlight dies. Day 1, panic sweeps Earth as global temperatures plunge below freezing. Day 3, power grids collapse worldwide under catastrophic blizzards. Day 7, entire oceans freeze solid on the surface.",
+        "scenes": [{"category": "space_shield"}, {"category": "pitch_black"}, {"category": "city_ruins"}, {"category": "dark_ice"}, {"category": "earth_space"}]
     }
 ]
+
+# High-impact apocalyptic / mystery stock visuals (1080x1920 portrait)
+THEMATIC_IMAGES = {
+    "earth_space": "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
+    "city_ruins": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop",
+    "ocean_tsunami": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop",
+    "pitch_black": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop",
+    "dark_ice": "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?w=1080&h=1920&fit=crop",
+    "space_shield": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop",
+    "human_pressure": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1080&h=1920&fit=crop"
+}
 
 
 def generate_ai_content():
     prompt = (
         "You are Zack D. Films creating a viral YouTube Short.\n"
-        "Pick an intense mystery scenario.\n\n"
+        "Pick an intense mystery or 'What If' scenario.\n\n"
         "RULES:\n"
         "1. Sentence 1 MUST start with 'What if [Scenario]?'\n"
         "2. Follow with rapid timeline: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...'.\n"
         "3. Length: 45 to 55 words.\n"
-        "4. Assign each scene one category from: 'earth', 'ruins', 'storm', 'space', 'galaxy', 'dark', 'fire'.\n\n"
+        "4. Assign each scene one category from: 'earth_space', 'city_ruins', 'ocean_tsunami', 'pitch_black', 'dark_ice', 'space_shield'.\n\n"
         "Respond ONLY in valid JSON:\n"
         "{\n"
         '  "title": "[Title #shorts]",\n'
@@ -54,11 +65,11 @@ def generate_ai_content():
         '  "tags": ["shorts", "whatif", "mystery"],\n'
         '  "voice_script": "What if [Scenario]? Day 1, [Event]. Day 3, [Escalation]. Day 5, [Catastrophe]. Day 10, [Climax]...",\n'
         '  "scenes": [\n'
-        '    {"category": "earth"},\n'
-        '    {"category": "ruins"},\n'
-        '    {"category": "storm"},\n'
-        '    {"category": "dark"},\n'
-        '    {"category": "space"}\n'
+        '    {"category": "earth_space"},\n'
+        '    {"category": "city_ruins"},\n'
+        '    {"category": "ocean_tsunami"},\n'
+        '    {"category": "pitch_black"},\n'
+        '    {"category": "space_shield"}\n'
         '  ]\n'
         "}"
     )
@@ -79,7 +90,7 @@ def generate_ai_content():
             except Exception as e:
                 print(f"Model {model_name} quota/error: {e}")
 
-    print("Gemini quota reached for all models. Sourcing scenario from offline fallback library...")
+    print("Gemini quota exhausted. Sourcing high-retention scenario from fallback library...")
     return random.choice(FALLBACK_SCRIPTS)
 
 
@@ -102,38 +113,32 @@ def make_male_voice(text):
         "audio.mp3"
     ]
     subprocess.run(cmd_ffmpeg, check=True)
-    print("Zack D. Films style voice generated: audio.mp3")
+    print("Voice ready: audio.mp3")
 
 
 def fetch_and_animate_scenes(scenes, duration_per_scene):
-    print("Fetching themed HD visuals and rendering smooth camera zooms...")
-    thematic_library = {
-        "earth": "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
-        "ruins": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop",
-        "storm": "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1080&h=1920&fit=crop",
-        "space": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop",
-        "galaxy": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1080&h=1920&fit=crop",
-        "dark": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop",
-        "fire": "https://images.unsplash.com/photo-1498429089284-41f8cf3ffd39?w=1080&h=1920&fit=crop"
-    }
-    
+    print("Fetching high-impact visuals and generating dynamic camera motion...")
     headers = {"User-Agent": "Mozilla/5.0"}
     total_frames = int(duration_per_scene * 24)
     
     for i, s in enumerate(scenes):
-        cat = s.get("category", "dark")
-        url = thematic_library.get(cat, thematic_library["dark"])
+        cat = s.get("category", "earth_space")
+        url = THEMATIC_IMAGES.get(cat, THEMATIC_IMAGES["earth_space"])
         img_file = f"raw_{i}.jpg"
         clip_file = f"motion_{i}.mp4"
         
+        # Download and ensure exact 1080x1920 base dimensions
         try:
             r = requests.get(url, headers=headers, timeout=20)
             with open(img_file, "wb") as f:
                 f.write(r.content)
+            base_img = Image.open(img_file).resize((1080, 1920))
+            base_img.save(img_file)
         except Exception:
             Image.new('RGB', (1080, 1920), color=(15 + i*15, 20, 40)).save(img_file)
             
-        zoom_filter = f"zoompan=z='min(zoom+0.0018,1.25)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=24"
+        # Fast, noticeable 20% Ken Burns push-in zoom on every cut
+        zoom_filter = f"zoompan=z='min(pzoom+0.003,1.20)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=24"
         cmd = [
             "ffmpeg", "-y", "-loop", "1", "-i", img_file,
             "-vf", zoom_filter,
@@ -142,6 +147,7 @@ def fetch_and_animate_scenes(scenes, duration_per_scene):
             clip_file
         ]
         subprocess.run(cmd, check=True)
+        print(f"Rendered dynamic zoom for Scene {i+1} [{cat}]")
 
 
 def render_video(metadata):
@@ -178,7 +184,7 @@ def render_video(metadata):
     final_video = CompositeVideoClip([background_track] + text_clips, size=(1080, 1920))
     final_video = final_video.set_audio(audio)
     
-    print("Writing final video...")
+    print("Writing final assembled Short...")
     final_video.write_videofile(
         "final.mp4",
         fps=24,
@@ -213,7 +219,7 @@ def post_to_youtube(metadata):
 
 
 if __name__ == "__main__":
-    print("1. Sourcing Zack D. Films script...")
+    print("1. Sourcing narrative script...")
     meta = generate_ai_content()
     
     print("2. Synthesizing Piper neural voice...")
