@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   run-bot:
@@ -43,5 +42,11 @@ jobs:
           echo "$TOKEN_JSON_DATA" > token.json
           python main.py
 
-      - name: 365-Day Keepalive (Prevents GitHub 60-day cron suspension)
-        uses: gautamkrishnar/keepalive-workflow@v2
+      - name: Auto Keep-Alive (Prevents 60-day cron suspension)
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          echo "$(date -u)" > keepalive.txt
+          git add keepalive.txt
+          git commit -m "Automated keepalive ping [skip ci]" || exit 0
+          git push
