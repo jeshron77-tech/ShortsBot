@@ -59,18 +59,18 @@ NICHES = [
 
 def generate_ai_content():
     used_file = "history_topics.json"
-    used_titles = []
+    past_titles = []
     if os.path.exists(used_file):
         try:
             with open(used_file, "r") as f:
-                used_titles = json.load(f)
+                past_titles = json.load(f)
         except Exception:
             pass
 
     selected_niche = random.choice(NICHES)
     prompt = (
         f"You are Zack D. Films creating a viral YouTube Short about {selected_niche}.\n"
-        f"CRITICAL: Do NOT write about any of these recent topics: {used_titles[-10:]}\n"
+        f"CRITICAL: Do NOT write about any of these recent topics: {past_titles[-15:] if past_titles else 'None'}\n"
         "Pick a BRAND NEW, completely unique 'What If' scenario.\n\n"
         "RULES:\n"
         "1. Sentence 1 MUST start with 'What if [Unique Scenario]?'\n"
@@ -100,27 +100,22 @@ def generate_ai_content():
                 clean_text = response.text.replace("```json", "").replace("```", "").strip()
                 parsed = json.loads(clean_text)
                 if "image_prompts" in parsed and len(parsed["image_prompts"]) >= 5:
-                    if parsed["title"] not in used_titles:
+                    if not any(past in parsed["title"].lower() for past in past_titles):
                         print(f"Generated successfully: {parsed['title']}")
-                        used_titles.append(parsed["title"])
+                        past_titles.append(parsed["title"])
                         with open(used_file, "w") as f:
-                            json.dump(used_titles[-50:], f)
+                            json.dump(past_titles[-50:], f)
                         return parsed
             except Exception as e:
                 print(f"Model {model_name} error: {e}")
 
     print("Selecting an unrepeated scenario from fallback library...")
-    available = [s for s in FALLBACK_SCRIPTS if s["title"] not in used_titles]
-    if not available:
-        available = FALLBACK_SCRIPTS
-        used_titles = []
-        
-    chosen = random.choice(available)
-    used_titles.append(chosen["title"])
+    available = [s for s in FALLBACK_SCRIPTS if not any(p in s["title"].lower() for p in past_titles)]
+    chosen = random.choice(available if available else FALLBACK_SCRIPTS)
+    past_titles.append(chosen["title"])
     with open(used_file, "w") as f:
-        json.dump(used_titles[-50:], f)
+        json.dump(past_titles[-50:], f)
     return chosen
-
 
 def make_male_voice(text):
     print("Generating voiceover via Piper neural TTS...")
@@ -128,7 +123,6 @@ def make_male_voice(text):
         f.write(text)
     subprocess.run(["python", "-m", "piper", "--model", "en_US-lessac-medium.onnx", "--output_file", "temp_voice.wav"], stdin=open("script_text.txt", "rb"), check=True)
     subprocess.run(["ffmpeg", "-y", "-i", "temp_voice.wav", "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2", "audio.mp3"], check=True)
-
 
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
     print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with Imagen 3...")
@@ -260,7 +254,6 @@ def post_to_youtube(metadata):
     from googleapiclient.http import MediaFileUpload
 
     try:
-        # Reverted to ONLY youtube.upload so it matches your existing token exactly
         creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload"])
         youtube = build("youtube", "v3", credentials=creds)
         
