@@ -74,7 +74,6 @@ def get_channel_recent_titles():
         pass
     return titles
 
-
 def generate_ai_content(past_titles):
     selected_niche = random.choice(NICHES)
     prompt = (
@@ -119,7 +118,6 @@ def generate_ai_content(past_titles):
     available = [s for s in FALLBACK_SCRIPTS if not any(p in s["title"].lower() for p in past_titles)]
     return random.choice(available if available else FALLBACK_SCRIPTS)
 
-
 def make_male_voice(text):
     print("Generating voiceover via Piper neural TTS...")
     with open("script_text.txt", "w", encoding="utf-8") as f:
@@ -127,13 +125,11 @@ def make_male_voice(text):
     subprocess.run(["python", "-m", "piper", "--model", "en_US-lessac-medium.onnx", "--output_file", "temp_voice.wav"], stdin=open("script_text.txt", "rb"), check=True)
     subprocess.run(["ffmpeg", "-y", "-i", "temp_voice.wav", "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2", "audio.mp3"], check=True)
 
-
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
     print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with Imagen 3...")
     total_frames = int(duration_per_scene * 24)
     headers = {"User-Agent": "Mozilla/5.0"}
     
-    # Configure Gemini SDK to use the SECOND API KEY specifically for images
     if GEMINI_IMAGE_KEY:
         genai.configure(api_key=GEMINI_IMAGE_KEY)
         print("Successfully loaded second Gemini API key for images.")
@@ -145,7 +141,7 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
         
         downloaded = False
         
-        # 1. ATTEMPT IMAGEN 3 (Using Second Key)
+        # 1. ATTEMPT IMAGEN 3
         if GEMINI_IMAGE_KEY:
             try:
                 print(f"Generating scene {i+1}/5 with Imagen 3: {raw_prompt}...")
@@ -164,9 +160,9 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
                 downloaded = True
                 print("Imagen 3 Success!")
             except Exception as e:
-                print(f"Imagen 3 blocked/failed (likely safety filter): {e}")
+                print(f"Imagen 3 fallback needed: {e}")
 
-        # 2. ATTEMPT POLLINATIONS FALLBACK (If Imagen fails)
+        # 2. ATTEMPT POLLINATIONS
         if not downloaded:
             encoded = urllib.parse.quote(clean_p)
             url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&nologo=true&model=turbo"
@@ -182,7 +178,7 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
             except Exception:
                 pass
                 
-        # 3. ATTEMPT PHOTOGRAPHY FALLBACK
+        # 3. ATTEMPT PHOTOGRAPHY
         if not downloaded:
             print(f"Using high-res photographic backup for scene {i+1}...")
             backup_url = HIGHRES_BACKUPS[i % len(HIGHRES_BACKUPS)]
@@ -204,7 +200,6 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
             clip_file
         ]
         subprocess.run(cmd, check=True)
-
 
 def render_video(metadata):
     audio = AudioFileClip("audio.mp3")
@@ -254,7 +249,6 @@ def render_video(metadata):
         threads=2
     )
 
-
 def post_to_youtube(metadata):
     from googleapiclient.discovery import build
     from google.oauth2.credentials import Credentials
@@ -276,7 +270,6 @@ def post_to_youtube(metadata):
     media = MediaFileUpload("final.mp4", chunksize=-1, resumable=True, mimetype="video/mp4")
     res = youtube.videos().insert(part="snippet,status", body=body, media_body=media).execute()
     print(f"Uploaded successfully! Video ID: {res.get('id')}")
-
 
 if __name__ == "__main__":
     print("1. Checking past YouTube uploads to prevent duplicates...")
