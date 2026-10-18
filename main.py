@@ -57,28 +57,20 @@ NICHES = [
     "ancient Earth catastrophes, dinosaur extinction meteors, and primordial climates"
 ]
 
-def get_channel_recent_titles():
-    titles = []
-    try:
-        from googleapiclient.discovery import build
-        from google.oauth2.credentials import Credentials
-        if os.path.exists("token.json"):
-            creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"])
-            yt = build("youtube", "v3", credentials=creds)
-            ch_resp = yt.channels().list(mine=True, part="contentDetails").execute()
-            uploads_id = ch_resp["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-            pl_resp = yt.playlistItems().list(playlistId=uploads_id, part="snippet", maxResults=15).execute()
-            for item in pl_resp.get("items", []):
-                titles.append(item["snippet"]["title"].lower())
-    except Exception:
-        pass
-    return titles
+def generate_ai_content():
+    used_file = "history_topics.json"
+    used_titles = []
+    if os.path.exists(used_file):
+        try:
+            with open(used_file, "r") as f:
+                used_titles = json.load(f)
+        except Exception:
+            pass
 
-def generate_ai_content(past_titles):
     selected_niche = random.choice(NICHES)
     prompt = (
         f"You are Zack D. Films creating a viral YouTube Short about {selected_niche}.\n"
-        f"CRITICAL: Do NOT write about any of these recent topics: {past_titles}\n"
+        f"CRITICAL: Do NOT write about any of these recent topics: {used_titles[-10:]}\n"
         "Pick a BRAND NEW, completely unique 'What If' scenario.\n\n"
         "RULES:\n"
         "1. Sentence 1 MUST start with 'What if [Unique Scenario]?'\n"
@@ -108,15 +100,27 @@ def generate_ai_content(past_titles):
                 clean_text = response.text.replace("```json", "").replace("```", "").strip()
                 parsed = json.loads(clean_text)
                 if "image_prompts" in parsed and len(parsed["image_prompts"]) >= 5:
-                    if not any(past in parsed["title"].lower() for past in past_titles):
+                    if parsed["title"] not in used_titles:
                         print(f"Generated successfully: {parsed['title']}")
+                        used_titles.append(parsed["title"])
+                        with open(used_file, "w") as f:
+                            json.dump(used_titles[-50:], f)
                         return parsed
             except Exception as e:
                 print(f"Model {model_name} error: {e}")
 
     print("Selecting an unrepeated scenario from fallback library...")
-    available = [s for s in FALLBACK_SCRIPTS if not any(p in s["title"].lower() for p in past_titles)]
-    return random.choice(available if available else FALLBACK_SCRIPTS)
+    available = [s for s in FALLBACK_SCRIPTS if s["title"] not in used_titles]
+    if not available:
+        available = FALLBACK_SCRIPTS
+        used_titles = []
+        
+    chosen = random.choice(available)
+    used_titles.append(chosen["title"])
+    with open(used_file, "w") as f:
+        json.dump(used_titles[-50:], f)
+    return chosen
+
 
 def make_male_voice(text):
     print("Generating voiceover via Piper neural TTS...")
@@ -124,6 +128,7 @@ def make_male_voice(text):
         f.write(text)
     subprocess.run(["python", "-m", "piper", "--model", "en_US-lessac-medium.onnx", "--output_file", "temp_voice.wav"], stdin=open("script_text.txt", "rb"), check=True)
     subprocess.run(["ffmpeg", "-y", "-i", "temp_voice.wav", "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2", "audio.mp3"], check=True)
+
 
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
     print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with Imagen 3...")
@@ -254,35 +259,36 @@ def post_to_youtube(metadata):
     from google.oauth2.credentials import Credentials
     from googleapiclient.http import MediaFileUpload
 
-    creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"])
-    youtube = build("youtube", "v3", credentials=creds)
-    
-    body = {
-        "snippet": {
-            "title": metadata["title"],
-            "description": metadata["description"] + "\n\n" + " ".join(["#" + t for t in metadata["tags"]]),
-            "tags": metadata["tags"],
-            "categoryId": "27"
-        },
-        "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}
-    }
-    
-    media = MediaFileUpload("final.mp4", chunksize=-1, resumable=True, mimetype="video/mp4")
-    res = youtube.videos().insert(part="snippet,status", body=body, media_body=media).execute()
-    print(f"Uploaded successfully! Video ID: {res.get('id')}")
+    try:
+        # Reverted to ONLY youtube.upload so it matches your existing token exactly
+        creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload"])
+        youtube = build("youtube", "v3", credentials=creds)
+        
+        body = {
+            "snippet": {
+                "title": metadata["title"],
+                "description": metadata["description"] + "\n\n" + " ".join(["#" + t for t in metadata["tags"]]),
+                "tags": metadata["tags"],
+                "categoryId": "27"
+            },
+            "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}
+        }
+        
+        media = MediaFileUpload("final.mp4", chunksize=-1, resumable=True, mimetype="video/mp4")
+        res = youtube.videos().insert(part="snippet,status", body=body, media_body=media).execute()
+        print(f"Uploaded successfully! Video ID: {res.get('id')}")
+    except Exception as e:
+        print(f"YOUTUBE UPLOAD FAILED: {e}")
 
 if __name__ == "__main__":
-    print("1. Checking past YouTube uploads to prevent duplicates...")
-    past = get_channel_recent_titles()
+    print("1. Generating unique topic...")
+    meta = generate_ai_content()
     
-    print("2. Generating a completely unique topic...")
-    meta = generate_ai_content(past)
-    
-    print("3. Synthesizing Piper neural voice...")
+    print("2. Synthesizing Piper neural voice...")
     make_male_voice(meta['voice_script'])
     
-    print("4. Assembling video and subtitles...")
+    print("3. Assembling video and subtitles...")
     render_video(meta)
     
-    print("5. Publishing to YouTube...")
+    print("4. Publishing to YouTube...")
     post_to_youtube(meta)
