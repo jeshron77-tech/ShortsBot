@@ -22,11 +22,11 @@ FALLBACK_SCRIPTS = [
         "tags": ["shorts", "whatif", "mystery", "science"],
         "voice_script": "What if Earth stopped spinning for ten days? Day 1, supersonic winds obliterate every skyscraper on the equator. Day 3, oceans shift violently toward the poles under titanic water walls. Day 5, one half freezes into endless darkness while the other roasts. Day 10, the planetary magnetic shield collapses completely.",
         "image_prompts": [
-            "Earth halting in deep space, storm winds tearing skyscrapers, cinematic 8k",
-            "Titanic tsunami swallowing coastlines and cities, disaster photography, highly detailed",
-            "Half of planet Earth frozen in dark blue glaciers, extreme icy apocalyptic wasteland",
-            "Earth magnetic field lines disintegrating, solar radiation storm hitting atmosphere",
-            "Fractured Earth from space, apocalyptic planetary view, 8k resolution, cinematic lighting"
+            "Earth halting in deep space, cosmic view, cinematic 8k",
+            "Titanic tsunami swallowing coastlines, giant wave destruction",
+            "Planet Earth frozen in dark blue glaciers, icy apocalypse",
+            "Earth magnetic field lines disintegrating in space",
+            "Fractured Earth from orbit, apocalyptic planetary view, 8k"
         ]
     },
     {
@@ -35,11 +35,11 @@ FALLBACK_SCRIPTS = [
         "tags": ["shorts", "whatif", "science", "danger"],
         "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every concrete building crumbles instantly into massive dust clouds. Second 2, the daytime sky turns pitch black as sunlight stops scattering. Second 3, everyone's eardrums violently rupture from sudden air pressure collapse. Second 5, unbonded oceans instantly vaporize into space.",
         "image_prompts": [
-            "Modern concrete bridges and buildings crumbling into fine dust clouds, shockwave",
-            "Daytime city street with pitch black sky above, stars visible at noon, eerie lighting",
-            "Shockwave of atmospheric air pressure drop, cinematic dramatic lighting",
-            "Global ocean surface boiling and vaporizing into the atmosphere, apocalyptic scale",
-            "Barren desolate Earth landscape without atmosphere, photorealistic"
+            "Modern buildings crumbling into dust clouds, shockwave",
+            "City street under pitch black daytime sky with bright stars",
+            "Shockwave of atmospheric air pressure drop, cinematic lighting",
+            "Global ocean surface boiling and vaporizing into space",
+            "Barren desolate Earth landscape without atmosphere, 8k"
         ]
     },
     {
@@ -48,13 +48,21 @@ FALLBACK_SCRIPTS = [
         "tags": ["shorts", "whatif", "sun", "space", "mystery"],
         "voice_script": "What if the Sun vanished for seven whole days? Minute 8, complete pitch blackness engulfs the globe as the final sunlight dies. Day 1, panic sweeps Earth as global temperatures plunge below freezing. Day 3, power grids collapse worldwide under catastrophic blizzards. Day 7, entire oceans freeze solid on the surface.",
         "image_prompts": [
-            "View from space showing the Sun vanishing into darkness, deep cosmos, photorealistic",
-            "New York City plunged into total freezing darkness, blizzard howling, eerie streetlights",
-            "Frozen city covered in snow and ice, collapsed power lines, post-apocalyptic, cinematic 8k",
-            "Ocean surface turning into thick jagged ice sheets, dark cloudy freezing atmosphere",
-            "Frozen globe Earth drifting in cold dark space without a star, cinematic lighting, 8k"
+            "The Sun vanishing in deep cosmos, dark solar system, 8k",
+            "New York City plunged into total freezing darkness with snow",
+            "City covered in deep snow and ice, collapsed power lines",
+            "Ocean surface freezing into jagged ice sheets under cloudy sky",
+            "Frozen globe Earth drifting in cold dark space, 8k"
         ]
     }
+]
+
+STOCK_FALLBACKS = [
+    "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop"
 ]
 
 NICHES = [
@@ -75,7 +83,7 @@ def generate_ai_content():
         "1. Sentence 1 MUST start with 'What if [Unique Scenario]?'\n"
         "2. Follow with rapid timeline: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...' (or Seconds/Minutes/Hours).\n"
         "3. Total voice script length: 45 to 55 words.\n"
-        "4. Provide EXACTLY 5 detailed, cinematic visual descriptions in 'image_prompts' corresponding to each timeline step.\n\n"
+        "4. Provide EXACTLY 5 concise, high-impact visual descriptions (under 8 words each) in 'image_prompts'.\n\n"
         "Respond ONLY in valid JSON:\n"
         "{\n"
         '  "title": "[Unique Title #shorts]",\n'
@@ -83,11 +91,11 @@ def generate_ai_content():
         '  "tags": ["shorts", "whatif", "mystery"],\n'
         '  "voice_script": "What if [Scenario]? Day 1, [Event]. Day 3, [Escalation]. Day 5, [Catastrophe]. Day 10, [Climax]...",\n'
         '  "image_prompts": [\n'
-        '    "cinematic render of ...",\n'
-        '    "hyper-realistic dramatic view of ...",\n'
-        '    "apocalyptic wide shot of ...",\n'
-        '    "macro detailed view of ...",\n'
-        '    "epic space view of ..."\n'
+        '    "space view of planet earth",\n'
+        '    "massive ocean storm waves",\n'
+        '    "frozen ruined city blizzard",\n'
+        '    "dark glowing aurora sky",\n'
+        '    "shattered earth in space"\n'
         '  ]\n'
         "}"
     )
@@ -107,7 +115,7 @@ def generate_ai_content():
                     print(f"Generated successfully via {model_name}!")
                     return parsed
             except Exception as e:
-                print(f"Model {model_name} quota/error: {e}")
+                print(f"Model {model_name} error: {e}")
 
     print("Gemini unavailable. Selecting an unrepeated fallback script...")
     used_file = "history_topics.json"
@@ -155,25 +163,25 @@ def make_male_voice(text):
 
 
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
-    print(f"Generating 5 distinct AI scenes ({duration_per_scene:.2f}s each)...")
+    print(f"Generating 5 AI scenes ({duration_per_scene:.2f}s each)...")
     total_frames = int(duration_per_scene * 24)
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     
     for i, raw_prompt in enumerate(image_prompts[:5]):
         img_file = f"raw_{i}.jpg"
         clip_file = f"motion_{i}.mp4"
         
-        enhanced_prompt = f"{raw_prompt}, 8k, cinematic lighting, photorealistic, vertical wallpaper"
-        encoded = urllib.parse.quote(enhanced_prompt)
-        seed = random.randint(1000, 999999)
+        clean_prompt = f"{raw_prompt}, cinematic, 8k, photorealistic"
+        encoded = urllib.parse.quote(clean_prompt)
+        seed = random.randint(100, 999999)
         url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&seed={seed}&nologo=true"
         
         downloaded = False
-        for attempt in range(3):
+        for attempt in range(2):
             try:
-                print(f"Downloading scene {i+1}/5: {raw_prompt[:35]}...")
-                r = requests.get(url, headers=headers, timeout=25)
-                if r.status_code == 200 and len(r.content) > 5000:
+                print(f"Downloading scene {i+1}/5: {raw_prompt}...")
+                r = requests.get(url, headers=headers, timeout=45)
+                if r.status_code == 200 and len(r.content) > 10000:
                     with open(img_file, "wb") as f:
                         f.write(r.content)
                     base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
@@ -181,14 +189,21 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
                     downloaded = True
                     break
             except Exception as e:
-                print(f"Scene {i+1} attempt {attempt+1} failed: {e}")
-                time.sleep(2)
+                print(f"Scene {i+1} retry {attempt+1}: {e}")
+                time.sleep(3)
                 
         if not downloaded:
-            print(f"Generating distinct solid fallback for scene {i+1}...")
-            colors = [(20, 25, 45), (45, 20, 25), (20, 45, 30), (35, 20, 45), (45, 35, 20)]
-            bg = Image.new('RGB', (1080, 1920), color=colors[i % len(colors)])
-            bg.save(img_file)
+            print(f"Using high-res fallback for scene {i+1}...")
+            fallback_url = STOCK_FALLBACKS[i % len(STOCK_FALLBACKS)]
+            try:
+                r_stock = requests.get(fallback_url, headers=headers, timeout=20)
+                with open(img_file, "wb") as f:
+                    f.write(r_stock.content)
+                base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
+                base_img.save(img_file, quality=95)
+            except Exception:
+                bg = Image.new('RGB', (1080, 1920), color=(15, 20, 35))
+                bg.save(img_file)
             
         zoom_filter = f"zoompan=z='min(pzoom+0.003,1.25)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=24"
         cmd = [
@@ -199,26 +214,17 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
             clip_file
         ]
         subprocess.run(cmd, check=True)
-        time.sleep(1.5)
+        time.sleep(2)
 
 
 def render_video(metadata):
     audio = AudioFileClip("audio.mp3")
     total_dur = audio.duration
     prompts = metadata.get('image_prompts', [])[:5]
-    if len(prompts) < 5:
-        prompts = [
-            "cinematic disaster apocalypse scene, 8k",
-            "dramatic space cosmic explosion, cinematic lighting",
-            "storm weather destruction, highly detailed",
-            "deep ocean abyss darkness, photorealistic",
-            "futuristic earth view from orbit, 8k"
-        ]
-        
     duration_per_scene = total_dur / len(prompts)
+    
     fetch_and_animate_scenes(prompts, duration_per_scene)
     
-    # Explicitly lock duration on each clip to guarantee scene transitions
     video_clips = []
     for i in range(len(prompts)):
         c = VideoFileClip(f"motion_{i}.mp4").subclip(0, duration_per_scene).set_duration(duration_per_scene)
@@ -284,7 +290,7 @@ def post_to_youtube(metadata):
 
 
 if __name__ == "__main__":
-    print("1. Generating narrative script and tailored visual prompts...")
+    print("1. Generating narrative script and visual prompts...")
     meta = generate_ai_content()
     
     print("2. Synthesizing Piper neural voice...")
