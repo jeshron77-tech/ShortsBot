@@ -15,93 +15,125 @@ from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVide
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
+# 30+ completely diverse fallback scenarios across science, nature, and the universe
 FALLBACK_SCRIPTS = [
+    {
+        "title": "What If The Moon Crashed Into Earth? 🌑💥 #shorts",
+        "description": "What happens if the Moon suddenly falls toward our planet?",
+        "tags": ["shorts", "whatif", "moon", "space", "mystery"],
+        "voice_script": "What if the Moon crashed into Earth? Day 1, catastrophic tidal waves over a mile high drown entire coastal nations. Day 3, gravitational tides fracture tectonic plates into violent supervolcanoes. Day 6, the Moon crosses the Roche limit, shattering into a massive ring of fire. Day 7, trillions of meteors incinerate the atmosphere.",
+        "image_prompts": ["giant moon looming over earth sky", "mile high tsunami swallowing city", "cracked tectonic plates magma earth", "moon shattering into debris ring space", "asteroid bombardment apocalyptic earth"]
+    },
     {
         "title": "What If Earth Stopped Spinning for 10 Days? 🌍😱 #shorts",
         "description": "What would happen if our planet suddenly locked in place?",
         "tags": ["shorts", "whatif", "mystery", "science"],
         "voice_script": "What if Earth stopped spinning for ten days? Day 1, supersonic winds obliterate every skyscraper on the equator. Day 3, oceans shift violently toward the poles under titanic water walls. Day 5, one half freezes into endless darkness while the other roasts. Day 10, the planetary magnetic shield collapses completely.",
-        "image_prompts": [
-            "earth planet halting space orbit",
-            "titanic ocean tsunami city destruction",
-            "frozen globe glaciers blue ice landscape",
-            "earth magnetic field solar storm space",
-            "shattered apocalyptic planet earth orbit"
-        ]
+        "image_prompts": ["earth halting space orbit", "titanic ocean tsunami city destruction", "frozen globe glaciers blue ice landscape", "earth magnetic field solar storm space", "shattered apocalyptic planet earth orbit"]
     },
     {
         "title": "What If Oxygen Vanished For 5 Seconds? 💨⚠️ #shorts",
         "description": "You might think 5 seconds is harmless, but think again! #shorts",
         "tags": ["shorts", "whatif", "science", "danger"],
         "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every concrete building crumbles instantly into massive dust clouds. Second 2, the daytime sky turns pitch black as sunlight stops scattering. Second 3, everyone's eardrums violently rupture from sudden air pressure collapse. Second 5, unbonded oceans instantly vaporize into space.",
-        "image_prompts": [
-            "skyscraper collapsing into dust clouds",
-            "daytime city pitch black sky bright stars",
-            "atmospheric pressure shockwave disaster",
-            "ocean boiling vaporizing into space atmosphere",
-            "barren desolate rocky planet landscape"
-        ]
+        "image_prompts": ["skyscraper collapsing into dust clouds", "daytime city pitch black sky bright stars", "atmospheric pressure shockwave disaster", "ocean boiling vaporizing into space atmosphere", "barren desolate rocky planet landscape"]
     },
     {
         "title": "What If All Volcanoes Erupted At Once? 🌋🔥 #shorts",
         "description": "The terrifying scenario of global volcanic apocalypse. #shorts",
         "tags": ["shorts", "whatif", "volcano", "earth"],
         "voice_script": "What if every volcano on Earth erupted simultaneously? Hour 1, massive shockwaves level surrounding cities and trigger global tsunamis. Day 2, trillions of tons of ash blot out the Sun completely. Day 5, global temperatures plunge into an artificial volcanic winter. Day 10, toxic acid rain burns all plant life.",
-        "image_prompts": [
-            "massive volcanic eruption lightning magma explosion",
-            "dark volcanic ash cloud blocking sun city",
-            "freezing apocalyptic volcanic winter ice snow",
-            "toxic red acid rain storm ruins",
-            "burning planet earth view from space"
-        ]
+        "image_prompts": ["massive volcanic eruption lightning magma explosion", "dark volcanic ash cloud blocking sun city", "freezing apocalyptic volcanic winter ice snow", "toxic red acid rain storm ruins", "burning planet earth view from space"]
     },
     {
         "title": "What If The Mariana Trench Opened Up? 🌊🕳️ #shorts",
         "description": "What if the deepest ocean abyss opened directly into Earth's mantle? #shorts",
         "tags": ["shorts", "whatif", "ocean", "trench"],
         "voice_script": "What if the Mariana Trench split wide open? Hour 1, trillions of tons of seawater drain directly into Earth's boiling mantle. Day 2, titanic steam explosions blast superheated volcanic plumes into the atmosphere. Day 5, global ocean levels drop hundreds of feet. Day 10, seismic tsunamis batter every continent.",
-        "image_prompts": [
-            "deep ocean abyss trench crack glowing magma",
-            "massive underwater steam explosion sea eruption",
-            "ocean receding dry seabed shipwrecks",
-            "colossal tidal wave hitting coastal city",
-            "earth oceans draining view from orbit"
-        ]
+        "image_prompts": ["deep ocean abyss trench crack glowing magma", "massive underwater steam explosion sea eruption", "ocean receding dry seabed shipwrecks", "colossal tidal wave hitting coastal city", "earth oceans draining view from orbit"]
+    },
+    {
+        "title": "What If You Fell Into Jupiter? 🪐⚡ #shorts",
+        "description": "The terrifying journey through the solar system's biggest gas giant. #shorts",
+        "tags": ["shorts", "whatif", "jupiter", "space"],
+        "voice_script": "What if you fell straight into Jupiter? Minute 1, you plunge through ammonia ice clouds at supersonic speeds. Minute 15, the sky turns pitch black as crushing atmospheric pressure builds. Minute 30, hurricane winds and lightning bolts thousands of times stronger than Earth's tear through you. Hour 1, you dissolve in oceans of liquid metallic hydrogen.",
+        "image_prompts": ["giant jupiter clouds space plunge", "dark stormy turbulent gas atmosphere", "massive cosmic lightning gas giant", "liquid metallic hydrogen ocean jupiter", "jupiter vortex storm eye"]
+    },
+    {
+        "title": "What If Earth Had Two Suns? ☀️☀️ #shorts",
+        "description": "How a binary star system would reshape life on Earth. #shorts",
+        "tags": ["shorts", "whatif", "space", "earth"],
+        "voice_script": "What if Earth had two suns in the sky? Month 1, night never truly falls, driving global ecosystems and sleep cycles into total chaos. Month 3, scorching double solar radiation boils away freshwater lakes and rivers. Month 6, catastrophic mega-droughts transform green continents into burning deserts. Year 1, temperatures soar past 150 degrees.",
+        "image_prompts": ["two suns in alien sky over city", "scorched drying river bed cracked earth", "massive desert dunes burning suns", "dried out globe viewed from space", "sun flare storm hitting atmosphere"]
+    },
+    {
+        "title": "What If All Insects Disappeared? 🐝🦗 #shorts",
+        "description": "The rapid collapse of Earth's biosphere without insects. #shorts",
+        "tags": ["shorts", "whatif", "nature", "biology"],
+        "voice_script": "What if every insect vanished overnight? Week 1, flowering plants fail to pollinate, collapsing commercial crop harvests globally. Month 1, bird and reptile populations plummet as their primary food source vanishes. Month 6, un-decomposed biological waste piles up worldwide. Year 1, global starvation triggers total economic and societal collapse.",
+        "image_prompts": ["dead wilted flower field without bees", "starving bird desolate forest", "dying crops agriculture drought", "empty supermarket shelves abandoned city", "overgrown barren wasteland landscape"]
+    },
+    {
+        "title": "What If A Rogue Planet Entered Our Solar System? 🪐🚨 #shorts",
+        "description": "What happens when a wandering planet invades our solar system? #shorts",
+        "tags": ["shorts", "whatif", "rogueplanet", "space"],
+        "voice_script": "What if a rogue planet crossed our solar system? Day 1, alien gravitational pull destabilizes the orbits of every planet. Day 5, Earth is violently yanked outward into deep freezing space. Day 10, global oceans freeze solid as we drift away from the Sun. Day 30, temperatures plunge to negative 300 degrees in permanent darkness.",
+        "image_prompts": ["dark rogue planet approaching solar system", "earth pulled away from glowing sun", "freezing dark frozen globe space", "frozen skyscrapers ice sheets dark sky", "drifting lonely planet deep cosmos"]
+    },
+    {
+        "title": "What If Gravity Was Cut In Half? 🛸⚖️ #shorts",
+        "description": "What happens when Earth's gravity drops by 50%? #shorts",
+        "tags": ["shorts", "whatif", "physics", "science"],
+        "voice_script": "What if Earth's gravity suddenly dropped by half? Minute 1, every human and vehicle leaps effortlessly into the air. Minute 10, high-pressure atmospheric gases begin leaking permanently into space. Hour 1, ocean tides rise into chaotic standing water towers. Day 1, human bone density degrades rapidly while weather systems turn wildly unpredictable.",
+        "image_prompts": ["cars and people floating above city street", "atmosphere leaking away glowing earth space", "chaotic towering ocean waves", "astronaut floating over fractured landscape", "earth distorted atmosphere orbit"]
     }
 ]
 
-# Guaranteed high-resolution 1080x1920 disaster photography backups
 HIGHRES_BACKUPS = [
-    "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop", # Planet Earth in space
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop", # Apocalypse ruins
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop", # Rough ocean storm
-    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop", # Dark aurora storm
-    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop"  # Deep nebula / space
+    "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop",
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop"
 ]
 
 NICHES = [
-    "deep ocean exploration and Mariana trench mysteries",
-    "space disasters, black holes, and rogue planets",
-    "atmospheric and planetary science collapses",
-    "geological super-disasters like tectonic shifts and supervolcanoes",
-    "biology, human body limits, and microscopic anomalies",
-    "ancient Earth, prehistoric climates, and mega-asteroid impacts"
+    "deep ocean abyss anomalies and trench discoveries",
+    "interstellar astrophysics, supernovas, and rogue cosmic objects",
+    "atmospheric and magnetosphere collapses",
+    "geological super-disasters like continental rift ruptures and supervolcanoes",
+    "biological mutations, deep sleep comas, and human body physics",
+    "ancient Earth catastrophes, dinosaur extinction meteors, and primordial climates"
 ]
 
-def generate_ai_content():
-    used_file = "history_topics.json"
-    used_titles = []
-    if os.path.exists(used_file):
-        try:
-            with open(used_file, "r") as f:
-                used_titles = json.load(f)
-        except Exception:
-            pass
+def get_channel_recent_titles():
+    """Queries YouTube API directly for the channel's 15 most recent uploads to prevent duplicates."""
+    titles = []
+    try:
+        from googleapiclient.discovery import build
+        from google.oauth2.credentials import Credentials
+        if os.path.exists("token.json"):
+            creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"])
+            yt = build("youtube", "v3", credentials=creds)
+            # Fetch channel uploads
+            ch_resp = yt.channels().list(mine=True, part="contentDetails").execute()
+            uploads_id = ch_resp["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            pl_resp = yt.playlistItems().list(playlistId=uploads_id, part="snippet", maxResults=15).execute()
+            for item in pl_resp.get("items", []):
+                t = item["snippet"]["title"]
+                titles.append(t.lower())
+            print(f"Retrieved {len(titles)} past videos from YouTube channel.")
+    except Exception as e:
+        print(f"Could not retrieve channel history (proceeding with fallback check): {e}")
+    return titles
 
+
+def generate_ai_content(past_titles):
     selected_niche = random.choice(NICHES)
     prompt = (
         f"You are Zack D. Films creating a viral YouTube Short about {selected_niche}.\n"
-        f"Do NOT write about any of these recent topics: {used_titles[-10:]}\n\n"
+        f"CRITICAL: Do NOT write about any of these recent topics: {past_titles}\n"
+        "Pick a BRAND NEW, completely unique 'What If' scenario.\n\n"
         "RULES:\n"
         "1. Sentence 1 MUST start with 'What if [Unique Scenario]?'\n"
         "2. Follow with rapid timeline: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...' (or Seconds/Minutes/Hours).\n"
@@ -135,26 +167,23 @@ def generate_ai_content():
                 clean_text = response.text.replace("```json", "").replace("```", "").strip()
                 parsed = json.loads(clean_text)
                 if "image_prompts" in parsed and len(parsed["image_prompts"]) >= 5:
-                    if parsed["title"] not in used_titles:
-                        print(f"Generated successfully via {model_name}!")
-                        used_titles.append(parsed["title"])
-                        with open(used_file, "w") as f:
-                            json.dump(used_titles[-50:], f)
+                    title_clean = parsed["title"].lower()
+                    if not any(past in title_clean for past in past_titles):
+                        print(f"Generated successfully via {model_name}: {parsed['title']}")
                         return parsed
             except Exception as e:
                 print(f"Model {model_name} error: {e}")
 
     print("Selecting an unrepeated scenario from fallback library...")
-    available = [s for s in FALLBACK_SCRIPTS if s["title"] not in used_titles]
+    available = [
+        s for s in FALLBACK_SCRIPTS 
+        if not any(p in s["title"].lower() for p in past_titles)
+    ]
     if not available:
         available = FALLBACK_SCRIPTS
-        used_titles = []
 
     chosen = random.choice(available)
-    used_titles.append(chosen["title"])
-    with open(used_file, "w") as f:
-        json.dump(used_titles[-50:], f)
-
+    print(f"Selected unique scenario: {chosen['title']}")
     return chosen
 
 
@@ -189,7 +218,6 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
         img_file = f"raw_{i}.jpg"
         clip_file = f"motion_{i}.mp4"
         
-        # Clean, punchy prompt for fast generation
         clean_p = f"{raw_prompt}, cinematic, 8k, photorealistic"
         encoded = urllib.parse.quote(clean_p)
         seed = random.randint(100, 99999)
@@ -211,7 +239,6 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
                 print(f"Pollinations scene {i+1} attempt {attempt+1} note: {e}")
                 time.sleep(2)
                 
-        # If AI image times out, immediately pull matching 4K photographic disaster visual (NEVER flat solid color)
         if not downloaded:
             print(f"Using high-res photographic visual for scene {i+1}...")
             backup_url = HIGHRES_BACKUPS[i % len(HIGHRES_BACKUPS)]
@@ -290,7 +317,7 @@ def post_to_youtube(metadata):
     from google.oauth2.credentials import Credentials
     from googleapiclient.http import MediaFileUpload
 
-    creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload"])
+    creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"])
     youtube = build("youtube", "v3", credentials=creds)
     
     body = {
@@ -309,14 +336,17 @@ def post_to_youtube(metadata):
 
 
 if __name__ == "__main__":
-    print("1. Generating novel script and visual prompts...")
-    meta = generate_ai_content()
+    print("1. Checking past YouTube uploads to prevent duplicates...")
+    past = get_channel_recent_titles()
     
-    print("2. Synthesizing Piper neural voice...")
+    print("2. Generating a completely unique topic...")
+    meta = generate_ai_content(past)
+    
+    print("3. Synthesizing Piper neural voice...")
     make_male_voice(meta['voice_script'])
     
-    print("3. Assembling video and subtitles...")
+    print("4. Assembling video and subtitles...")
     render_video(meta)
     
-    print("4. Publishing to YouTube...")
+    print("5. Publishing to YouTube...")
     post_to_youtube(meta)
