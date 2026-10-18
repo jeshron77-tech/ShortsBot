@@ -5,6 +5,7 @@ import requests
 import random
 import subprocess
 import time
+import io
 from PIL import Image
 
 if not hasattr(Image, 'ANTIALIAS'):
@@ -14,29 +15,15 @@ import google.generativeai as genai
 from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_IMAGE_KEY = os.environ.get("GEMINI_IMAGE_API_KEY")
 
-# 30+ completely diverse fallback scenarios across science, nature, and the universe
 FALLBACK_SCRIPTS = [
-    {
-        "title": "What If The Moon Crashed Into Earth? 🌑💥 #shorts",
-        "description": "What happens if the Moon suddenly falls toward our planet?",
-        "tags": ["shorts", "whatif", "moon", "space", "mystery"],
-        "voice_script": "What if the Moon crashed into Earth? Day 1, catastrophic tidal waves over a mile high drown entire coastal nations. Day 3, gravitational tides fracture tectonic plates into violent supervolcanoes. Day 6, the Moon crosses the Roche limit, shattering into a massive ring of fire. Day 7, trillions of meteors incinerate the atmosphere.",
-        "image_prompts": ["giant moon looming over earth sky", "mile high tsunami swallowing city", "cracked tectonic plates magma earth", "moon shattering into debris ring space", "asteroid bombardment apocalyptic earth"]
-    },
     {
         "title": "What If Earth Stopped Spinning for 10 Days? 🌍😱 #shorts",
         "description": "What would happen if our planet suddenly locked in place?",
         "tags": ["shorts", "whatif", "mystery", "science"],
         "voice_script": "What if Earth stopped spinning for ten days? Day 1, supersonic winds obliterate every skyscraper on the equator. Day 3, oceans shift violently toward the poles under titanic water walls. Day 5, one half freezes into endless darkness while the other roasts. Day 10, the planetary magnetic shield collapses completely.",
-        "image_prompts": ["earth halting space orbit", "titanic ocean tsunami city destruction", "frozen globe glaciers blue ice landscape", "earth magnetic field solar storm space", "shattered apocalyptic planet earth orbit"]
-    },
-    {
-        "title": "What If Oxygen Vanished For 5 Seconds? 💨⚠️ #shorts",
-        "description": "You might think 5 seconds is harmless, but think again! #shorts",
-        "tags": ["shorts", "whatif", "science", "danger"],
-        "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every concrete building crumbles instantly into massive dust clouds. Second 2, the daytime sky turns pitch black as sunlight stops scattering. Second 3, everyone's eardrums violently rupture from sudden air pressure collapse. Second 5, unbonded oceans instantly vaporize into space.",
-        "image_prompts": ["skyscraper collapsing into dust clouds", "daytime city pitch black sky bright stars", "atmospheric pressure shockwave disaster", "ocean boiling vaporizing into space atmosphere", "barren desolate rocky planet landscape"]
+        "image_prompts": ["earth planet halting space orbit", "titanic ocean tsunami city destruction", "frozen globe glaciers blue ice landscape", "earth magnetic field solar storm space", "shattered apocalyptic planet earth orbit"]
     },
     {
         "title": "What If All Volcanoes Erupted At Once? 🌋🔥 #shorts",
@@ -51,41 +38,6 @@ FALLBACK_SCRIPTS = [
         "tags": ["shorts", "whatif", "ocean", "trench"],
         "voice_script": "What if the Mariana Trench split wide open? Hour 1, trillions of tons of seawater drain directly into Earth's boiling mantle. Day 2, titanic steam explosions blast superheated volcanic plumes into the atmosphere. Day 5, global ocean levels drop hundreds of feet. Day 10, seismic tsunamis batter every continent.",
         "image_prompts": ["deep ocean abyss trench crack glowing magma", "massive underwater steam explosion sea eruption", "ocean receding dry seabed shipwrecks", "colossal tidal wave hitting coastal city", "earth oceans draining view from orbit"]
-    },
-    {
-        "title": "What If You Fell Into Jupiter? 🪐⚡ #shorts",
-        "description": "The terrifying journey through the solar system's biggest gas giant. #shorts",
-        "tags": ["shorts", "whatif", "jupiter", "space"],
-        "voice_script": "What if you fell straight into Jupiter? Minute 1, you plunge through ammonia ice clouds at supersonic speeds. Minute 15, the sky turns pitch black as crushing atmospheric pressure builds. Minute 30, hurricane winds and lightning bolts thousands of times stronger than Earth's tear through you. Hour 1, you dissolve in oceans of liquid metallic hydrogen.",
-        "image_prompts": ["giant jupiter clouds space plunge", "dark stormy turbulent gas atmosphere", "massive cosmic lightning gas giant", "liquid metallic hydrogen ocean jupiter", "jupiter vortex storm eye"]
-    },
-    {
-        "title": "What If Earth Had Two Suns? ☀️☀️ #shorts",
-        "description": "How a binary star system would reshape life on Earth. #shorts",
-        "tags": ["shorts", "whatif", "space", "earth"],
-        "voice_script": "What if Earth had two suns in the sky? Month 1, night never truly falls, driving global ecosystems and sleep cycles into total chaos. Month 3, scorching double solar radiation boils away freshwater lakes and rivers. Month 6, catastrophic mega-droughts transform green continents into burning deserts. Year 1, temperatures soar past 150 degrees.",
-        "image_prompts": ["two suns in alien sky over city", "scorched drying river bed cracked earth", "massive desert dunes burning suns", "dried out globe viewed from space", "sun flare storm hitting atmosphere"]
-    },
-    {
-        "title": "What If All Insects Disappeared? 🐝🦗 #shorts",
-        "description": "The rapid collapse of Earth's biosphere without insects. #shorts",
-        "tags": ["shorts", "whatif", "nature", "biology"],
-        "voice_script": "What if every insect vanished overnight? Week 1, flowering plants fail to pollinate, collapsing commercial crop harvests globally. Month 1, bird and reptile populations plummet as their primary food source vanishes. Month 6, un-decomposed biological waste piles up worldwide. Year 1, global starvation triggers total economic and societal collapse.",
-        "image_prompts": ["dead wilted flower field without bees", "starving bird desolate forest", "dying crops agriculture drought", "empty supermarket shelves abandoned city", "overgrown barren wasteland landscape"]
-    },
-    {
-        "title": "What If A Rogue Planet Entered Our Solar System? 🪐🚨 #shorts",
-        "description": "What happens when a wandering planet invades our solar system? #shorts",
-        "tags": ["shorts", "whatif", "rogueplanet", "space"],
-        "voice_script": "What if a rogue planet crossed our solar system? Day 1, alien gravitational pull destabilizes the orbits of every planet. Day 5, Earth is violently yanked outward into deep freezing space. Day 10, global oceans freeze solid as we drift away from the Sun. Day 30, temperatures plunge to negative 300 degrees in permanent darkness.",
-        "image_prompts": ["dark rogue planet approaching solar system", "earth pulled away from glowing sun", "freezing dark frozen globe space", "frozen skyscrapers ice sheets dark sky", "drifting lonely planet deep cosmos"]
-    },
-    {
-        "title": "What If Gravity Was Cut In Half? 🛸⚖️ #shorts",
-        "description": "What happens when Earth's gravity drops by 50%? #shorts",
-        "tags": ["shorts", "whatif", "physics", "science"],
-        "voice_script": "What if Earth's gravity suddenly dropped by half? Minute 1, every human and vehicle leaps effortlessly into the air. Minute 10, high-pressure atmospheric gases begin leaking permanently into space. Hour 1, ocean tides rise into chaotic standing water towers. Day 1, human bone density degrades rapidly while weather systems turn wildly unpredictable.",
-        "image_prompts": ["cars and people floating above city street", "atmosphere leaking away glowing earth space", "chaotic towering ocean waves", "astronaut floating over fractured landscape", "earth distorted atmosphere orbit"]
     }
 ]
 
@@ -102,12 +54,10 @@ NICHES = [
     "interstellar astrophysics, supernovas, and rogue cosmic objects",
     "atmospheric and magnetosphere collapses",
     "geological super-disasters like continental rift ruptures and supervolcanoes",
-    "biological mutations, deep sleep comas, and human body physics",
     "ancient Earth catastrophes, dinosaur extinction meteors, and primordial climates"
 ]
 
 def get_channel_recent_titles():
-    """Queries YouTube API directly for the channel's 15 most recent uploads to prevent duplicates."""
     titles = []
     try:
         from googleapiclient.discovery import build
@@ -115,16 +65,13 @@ def get_channel_recent_titles():
         if os.path.exists("token.json"):
             creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"])
             yt = build("youtube", "v3", credentials=creds)
-            # Fetch channel uploads
             ch_resp = yt.channels().list(mine=True, part="contentDetails").execute()
             uploads_id = ch_resp["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
             pl_resp = yt.playlistItems().list(playlistId=uploads_id, part="snippet", maxResults=15).execute()
             for item in pl_resp.get("items", []):
-                t = item["snippet"]["title"]
-                titles.append(t.lower())
-            print(f"Retrieved {len(titles)} past videos from YouTube channel.")
-    except Exception as e:
-        print(f"Could not retrieve channel history (proceeding with fallback check): {e}")
+                titles.append(item["snippet"]["title"].lower())
+    except Exception:
+        pass
     return titles
 
 
@@ -147,19 +94,14 @@ def generate_ai_content(past_titles):
         '  "voice_script": "What if [Scenario]? Day 1, [Event]. Day 3, [Escalation]. Day 5, [Catastrophe]. Day 10, [Climax]...",\n'
         '  "image_prompts": [\n'
         '    "space view planet earth",\n'
-        '    "massive ocean storm waves",\n'
-        '    "frozen ruined city blizzard",\n'
-        '    "dark glowing aurora sky",\n'
-        '    "shattered earth space orbit"\n'
+        '    "massive ocean storm waves"\n'
         '  ]\n'
         "}"
     )
 
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro']
-    
     if GEMINI_KEY:
         genai.configure(api_key=GEMINI_KEY)
-        for model_name in models_to_try:
+        for model_name in ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b']:
             try:
                 print(f"Requesting novel script ({selected_niche}) from {model_name}...")
                 model = genai.GenerativeModel(model_name)
@@ -167,80 +109,82 @@ def generate_ai_content(past_titles):
                 clean_text = response.text.replace("```json", "").replace("```", "").strip()
                 parsed = json.loads(clean_text)
                 if "image_prompts" in parsed and len(parsed["image_prompts"]) >= 5:
-                    title_clean = parsed["title"].lower()
-                    if not any(past in title_clean for past in past_titles):
-                        print(f"Generated successfully via {model_name}: {parsed['title']}")
+                    if not any(past in parsed["title"].lower() for past in past_titles):
+                        print(f"Generated successfully: {parsed['title']}")
                         return parsed
             except Exception as e:
                 print(f"Model {model_name} error: {e}")
 
     print("Selecting an unrepeated scenario from fallback library...")
-    available = [
-        s for s in FALLBACK_SCRIPTS 
-        if not any(p in s["title"].lower() for p in past_titles)
-    ]
-    if not available:
-        available = FALLBACK_SCRIPTS
-
-    chosen = random.choice(available)
-    print(f"Selected unique scenario: {chosen['title']}")
-    return chosen
+    available = [s for s in FALLBACK_SCRIPTS if not any(p in s["title"].lower() for p in past_titles)]
+    return random.choice(available if available else FALLBACK_SCRIPTS)
 
 
 def make_male_voice(text):
     print("Generating voiceover via Piper neural TTS...")
     with open("script_text.txt", "w", encoding="utf-8") as f:
         f.write(text)
-        
-    cmd_piper = [
-        "python", "-m", "piper",
-        "--model", "en_US-lessac-medium.onnx",
-        "--output_file", "temp_voice.wav"
-    ]
-    with open("script_text.txt", "rb") as f_in:
-        subprocess.run(cmd_piper, stdin=f_in, check=True)
-    
-    cmd_ffmpeg = [
-        "ffmpeg", "-y", "-i", "temp_voice.wav",
-        "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2",
-        "audio.mp3"
-    ]
-    subprocess.run(cmd_ffmpeg, check=True)
-    print("Voice ready: audio.mp3")
+    subprocess.run(["python", "-m", "piper", "--model", "en_US-lessac-medium.onnx", "--output_file", "temp_voice.wav"], stdin=open("script_text.txt", "rb"), check=True)
+    subprocess.run(["ffmpeg", "-y", "-i", "temp_voice.wav", "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2", "audio.mp3"], check=True)
 
 
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
-    print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each)...")
+    print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with Imagen 3...")
     total_frames = int(duration_per_scene * 24)
     headers = {"User-Agent": "Mozilla/5.0"}
+    
+    # Configure Gemini SDK to use the SECOND API KEY specifically for images
+    if GEMINI_IMAGE_KEY:
+        genai.configure(api_key=GEMINI_IMAGE_KEY)
+        print("Successfully loaded second Gemini API key for images.")
     
     for i, raw_prompt in enumerate(image_prompts[:5]):
         img_file = f"raw_{i}.jpg"
         clip_file = f"motion_{i}.mp4"
-        
-        clean_p = f"{raw_prompt}, cinematic, 8k, photorealistic"
-        encoded = urllib.parse.quote(clean_p)
-        seed = random.randint(100, 99999)
-        url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&seed={seed}&nologo=true&model=turbo"
+        clean_p = f"{raw_prompt}, cinematic, 8k, highly detailed, photorealistic"
         
         downloaded = False
-        for attempt in range(2):
+        
+        # 1. ATTEMPT IMAGEN 3 (Using Second Key)
+        if GEMINI_IMAGE_KEY:
             try:
-                print(f"Downloading scene {i+1}/5: {raw_prompt}...")
-                r = requests.get(url, headers=headers, timeout=30)
+                print(f"Generating scene {i+1}/5 with Imagen 3: {raw_prompt}...")
+                imagen = genai.ImageGenerationModel("imagen-3.0-generate-001")
+                result = imagen.generate_images(
+                    prompt=clean_p,
+                    number_of_images=1,
+                    aspect_ratio="9:16",
+                    output_mime_type="image/jpeg"
+                )
+                img_bytes = result.images[0].image.image_bytes
+                with open(img_file, "wb") as f:
+                    f.write(img_bytes)
+                base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
+                base_img.save(img_file, quality=95)
+                downloaded = True
+                print("Imagen 3 Success!")
+            except Exception as e:
+                print(f"Imagen 3 blocked/failed (likely safety filter): {e}")
+
+        # 2. ATTEMPT POLLINATIONS FALLBACK (If Imagen fails)
+        if not downloaded:
+            encoded = urllib.parse.quote(clean_p)
+            url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&nologo=true&model=turbo"
+            try:
+                print(f"Falling back to Pollinations for scene {i+1}...")
+                r = requests.get(url, headers=headers, timeout=25)
                 if r.status_code == 200 and len(r.content) > 10000:
                     with open(img_file, "wb") as f:
                         f.write(r.content)
                     base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
                     base_img.save(img_file, quality=95)
                     downloaded = True
-                    break
-            except Exception as e:
-                print(f"Pollinations scene {i+1} attempt {attempt+1} note: {e}")
-                time.sleep(2)
+            except Exception:
+                pass
                 
+        # 3. ATTEMPT PHOTOGRAPHY FALLBACK
         if not downloaded:
-            print(f"Using high-res photographic visual for scene {i+1}...")
+            print(f"Using high-res photographic backup for scene {i+1}...")
             backup_url = HIGHRES_BACKUPS[i % len(HIGHRES_BACKUPS)]
             try:
                 r_backup = requests.get(backup_url, headers=headers, timeout=20)
@@ -260,7 +204,6 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
             clip_file
         ]
         subprocess.run(cmd, check=True)
-        time.sleep(1)
 
 
 def render_video(metadata):
