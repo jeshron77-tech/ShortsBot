@@ -20,26 +20,26 @@ FALLBACK_SCRIPTS = [
         "title": "What If Earth Stopped Spinning for 10 Days? 🌍😱 #shorts",
         "description": "What would happen if our planet suddenly locked in place?",
         "tags": ["shorts", "whatif", "mystery", "science"],
-        "voice_script": "What if Earth stopped spinning for ten days? Day 1, supersonic winds obliterate every skyscraper and city on the equator. Day 3, oceans shift violently toward the poles, swallowing continents under titanic water walls. Day 5, one half freezes into endless arctic darkness while the other roasts. Day 10, the planetary magnetic shield collapses completely.",
+        "voice_script": "What if Earth stopped spinning for ten days? Day 1, supersonic winds obliterate every skyscraper on the equator. Day 3, oceans shift violently toward the poles under titanic water walls. Day 5, one half freezes into endless darkness while the other roasts. Day 10, the planetary magnetic shield collapses completely.",
         "image_prompts": [
-            "Earth halting in deep space, supersonic storm winds blowing through skyscrapers, hyper-realistic, 8k",
-            "Megatsunami swallowing cities at the poles, titanic water walls, disaster photography, highly detailed",
-            "Half of planet Earth frozen in dark blue glaciers, extreme icy apocalyptic wasteland, cinematic",
-            "Earth magnetic field lines disintegrating, solar radiation storm hitting atmosphere, sci-fi render",
-            "View of fractured Earth from space, apocalyptic planetary view, 8k resolution, cinematic lighting"
+            "Earth halting in deep space, storm winds tearing skyscrapers, cinematic 8k",
+            "Titanic tsunami swallowing coastlines and cities, disaster photography, highly detailed",
+            "Half of planet Earth frozen in dark blue glaciers, extreme icy apocalyptic wasteland",
+            "Earth magnetic field lines disintegrating, solar radiation storm hitting atmosphere",
+            "Fractured Earth from space, apocalyptic planetary view, 8k resolution, cinematic lighting"
         ]
     },
     {
         "title": "What If Oxygen Vanished For 5 Seconds? 💨⚠️ #shorts",
         "description": "You might think 5 seconds is harmless, but think again! #shorts",
         "tags": ["shorts", "whatif", "science", "danger"],
-        "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every concrete building crumbles instantly into massive dust clouds. Second 2, the daytime sky turns pitch black as atmospheric sunlight stops scattering. Second 3, everyone's eardrums violently rupture from sudden air pressure collapse. Second 5, unbonded oceans instantly vaporize into space.",
+        "voice_script": "What if Earth lost oxygen for just five seconds? Second 1, every concrete building crumbles instantly into massive dust clouds. Second 2, the daytime sky turns pitch black as sunlight stops scattering. Second 3, everyone's eardrums violently rupture from sudden air pressure collapse. Second 5, unbonded oceans instantly vaporize into space.",
         "image_prompts": [
-            "Modern concrete bridges and buildings collapsing into fine dust clouds, shockwave, hyper-detailed",
-            "Daytime city street with a pitch black sky above, stars visible at noon, eerie lighting, cinematic",
-            "Shockwave of atmospheric pressure drop, people looking in panic, cinematic dramatic lighting",
-            "Global ocean surface boiling and vaporizing into the upper atmosphere, apocalyptic scale, 8k",
-            "Barren planetary surface without atmosphere, desolate Earth landscape, photorealistic"
+            "Modern concrete bridges and buildings crumbling into fine dust clouds, shockwave",
+            "Daytime city street with pitch black sky above, stars visible at noon, eerie lighting",
+            "Shockwave of atmospheric air pressure drop, cinematic dramatic lighting",
+            "Global ocean surface boiling and vaporizing into the atmosphere, apocalyptic scale",
+            "Barren desolate Earth landscape without atmosphere, photorealistic"
         ]
     },
     {
@@ -75,7 +75,7 @@ def generate_ai_content():
         "1. Sentence 1 MUST start with 'What if [Unique Scenario]?'\n"
         "2. Follow with rapid timeline: 'Day 1...', 'Day 3...', 'Day 5...', 'Day 10...' (or Seconds/Minutes/Hours).\n"
         "3. Total voice script length: 45 to 55 words.\n"
-        "4. Provide 5 detailed, cinematic visual descriptions in 'image_prompts' corresponding to each timeline step.\n\n"
+        "4. Provide EXACTLY 5 detailed, cinematic visual descriptions in 'image_prompts' corresponding to each timeline step.\n\n"
         "Respond ONLY in valid JSON:\n"
         "{\n"
         '  "title": "[Unique Title #shorts]",\n'
@@ -133,7 +133,7 @@ def generate_ai_content():
 
 
 def make_male_voice(text):
-    print("Generating Zack D. Films style voiceover via Piper...")
+    print("Generating voiceover via Piper neural TTS...")
     with open("script_text.txt", "w", encoding="utf-8") as f:
         f.write(text)
         
@@ -155,7 +155,7 @@ def make_male_voice(text):
 
 
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
-    print("Rendering custom AI visuals via Pollinations...")
+    print(f"Generating 5 distinct AI scenes ({duration_per_scene:.2f}s each)...")
     total_frames = int(duration_per_scene * 24)
     headers = {"User-Agent": "Mozilla/5.0"}
     
@@ -163,7 +163,7 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
         img_file = f"raw_{i}.jpg"
         clip_file = f"motion_{i}.mp4"
         
-        enhanced_prompt = f"{raw_prompt}, photorealistic, dramatic cinematic lighting, 8k resolution, vertical composition"
+        enhanced_prompt = f"{raw_prompt}, 8k, cinematic lighting, photorealistic, vertical wallpaper"
         encoded = urllib.parse.quote(enhanced_prompt)
         seed = random.randint(1000, 999999)
         url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&seed={seed}&nologo=true"
@@ -171,9 +171,9 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
         downloaded = False
         for attempt in range(3):
             try:
-                print(f"Generating scene {i+1}/5: {raw_prompt[:40]}...")
-                r = requests.get(url, headers=headers, timeout=30)
-                if r.status_code == 200 and len(r.content) > 10000:
+                print(f"Downloading scene {i+1}/5: {raw_prompt[:35]}...")
+                r = requests.get(url, headers=headers, timeout=25)
+                if r.status_code == 200 and len(r.content) > 5000:
                     with open(img_file, "wb") as f:
                         f.write(r.content)
                     base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
@@ -181,15 +181,16 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
                     downloaded = True
                     break
             except Exception as e:
-                print(f"Attempt {attempt+1} failed: {e}")
+                print(f"Scene {i+1} attempt {attempt+1} failed: {e}")
                 time.sleep(2)
                 
         if not downloaded:
-            print(f"Fallback visual for scene {i+1}...")
-            bg = Image.new('RGB', (1080, 1920), color=(10 + i * 15, 15, 30 + i * 10))
+            print(f"Generating distinct solid fallback for scene {i+1}...")
+            colors = [(20, 25, 45), (45, 20, 25), (20, 45, 30), (35, 20, 45), (45, 35, 20)]
+            bg = Image.new('RGB', (1080, 1920), color=colors[i % len(colors)])
             bg.save(img_file)
             
-        zoom_filter = f"zoompan=z='min(pzoom+0.003,1.20)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=24"
+        zoom_filter = f"zoompan=z='min(pzoom+0.003,1.25)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=24"
         cmd = [
             "ffmpeg", "-y", "-loop", "1", "-i", img_file,
             "-vf", zoom_filter,
@@ -198,18 +199,32 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
             clip_file
         ]
         subprocess.run(cmd, check=True)
+        time.sleep(1.5)
 
 
 def render_video(metadata):
     audio = AudioFileClip("audio.mp3")
     total_dur = audio.duration
-    prompts = metadata.get('image_prompts', [])
+    prompts = metadata.get('image_prompts', [])[:5]
+    if len(prompts) < 5:
+        prompts = [
+            "cinematic disaster apocalypse scene, 8k",
+            "dramatic space cosmic explosion, cinematic lighting",
+            "storm weather destruction, highly detailed",
+            "deep ocean abyss darkness, photorealistic",
+            "futuristic earth view from orbit, 8k"
+        ]
+        
     duration_per_scene = total_dur / len(prompts)
-    
     fetch_and_animate_scenes(prompts, duration_per_scene)
     
-    video_clips = [VideoFileClip(f"motion_{i}.mp4") for i in range(len(prompts))]
-    background_track = concatenate_videoclips(video_clips, method="compose").set_duration(total_dur)
+    # Explicitly lock duration on each clip to guarantee scene transitions
+    video_clips = []
+    for i in range(len(prompts)):
+        c = VideoFileClip(f"motion_{i}.mp4").subclip(0, duration_per_scene).set_duration(duration_per_scene)
+        video_clips.append(c)
+        
+    background_track = concatenate_videoclips(video_clips, method="chain").set_duration(total_dur)
     
     words = metadata["voice_script"].split()
     phrases = [" ".join(words[i:i+3]) for i in range(0, len(words), 3)]
@@ -232,7 +247,7 @@ def render_video(metadata):
         cur_t += phrase_dur
         
     final_video = CompositeVideoClip([background_track] + text_clips, size=(1080, 1920))
-    final_video = final_video.set_audio(audio)
+    final_video = final_video.set_audio(audio).set_duration(total_dur)
     
     print("Writing final assembled Short...")
     final_video.write_videofile(
