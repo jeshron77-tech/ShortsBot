@@ -5,7 +5,6 @@ import requests
 import random
 import subprocess
 import time
-import io
 from PIL import Image
 
 if not hasattr(Image, 'ANTIALIAS'):
@@ -15,7 +14,6 @@ import google.generativeai as genai
 from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_IMAGE_KEY = os.environ.get("GEMINI_IMAGE_API_KEY")
 
 FALLBACK_SCRIPTS = [
     {
@@ -41,12 +39,13 @@ FALLBACK_SCRIPTS = [
     }
 ]
 
+# Hardcoded disaster/space images so it never pulls random objects like game controllers
 HIGHRES_BACKUPS = [
-    "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop",
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop",
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop",
-    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop",
-    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop"
+    "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop", # Space
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop", # Globe glowing
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop", # Ocean waves
+    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop", # Dark storm clouds
+    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop"  # Apocalyptic ruins
 ]
 
 NICHES = [
@@ -57,20 +56,28 @@ NICHES = [
     "ancient Earth catastrophes, dinosaur extinction meteors, and primordial climates"
 ]
 
-def generate_ai_content():
-    used_file = "history_topics.json"
-    past_titles = []
-    if os.path.exists(used_file):
-        try:
-            with open(used_file, "r") as f:
-                past_titles = json.load(f)
-        except Exception:
-            pass
+def get_channel_recent_titles():
+    titles = []
+    try:
+        from googleapiclient.discovery import build
+        from google.oauth2.credentials import Credentials
+        if os.path.exists("token.json"):
+            creds = Credentials.from_authorized_user_file("token.json", ["https://www.googleapis.com/auth/youtube.upload"])
+            yt = build("youtube", "v3", credentials=creds)
+            ch_resp = yt.channels().list(mine=True, part="contentDetails").execute()
+            uploads_id = ch_resp["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            pl_resp = yt.playlistItems().list(playlistId=uploads_id, part="snippet", maxResults=15).execute()
+            for item in pl_resp.get("items", []):
+                titles.append(item["snippet"]["title"].lower())
+    except Exception:
+        pass
+    return titles
 
+def generate_ai_content(past_titles):
     selected_niche = random.choice(NICHES)
     prompt = (
         f"You are Zack D. Films creating a viral YouTube Short about {selected_niche}.\n"
-        f"CRITICAL: Do NOT write about any of these recent topics: {past_titles[-15:] if past_titles else 'None'}\n"
+        f"CRITICAL: Do NOT write about any of these recent topics: {past_titles}\n"
         "Pick a BRAND NEW, completely unique 'What If' scenario.\n\n"
         "RULES:\n"
         "1. Sentence 1 MUST start with 'What if [Unique Scenario]?'\n"
@@ -102,20 +109,13 @@ def generate_ai_content():
                 if "image_prompts" in parsed and len(parsed["image_prompts"]) >= 5:
                     if not any(past in parsed["title"].lower() for past in past_titles):
                         print(f"Generated successfully: {parsed['title']}")
-                        past_titles.append(parsed["title"])
-                        with open(used_file, "w") as f:
-                            json.dump(past_titles[-50:], f)
                         return parsed
             except Exception as e:
                 print(f"Model {model_name} error: {e}")
 
     print("Selecting an unrepeated scenario from fallback library...")
     available = [s for s in FALLBACK_SCRIPTS if not any(p in s["title"].lower() for p in past_titles)]
-    chosen = random.choice(available if available else FALLBACK_SCRIPTS)
-    past_titles.append(chosen["title"])
-    with open(used_file, "w") as f:
-        json.dump(past_titles[-50:], f)
-    return chosen
+    return random.choice(available if available else FALLBACK_SCRIPTS)
 
 def make_male_voice(text):
     print("Generating voiceover via Piper neural TTS...")
@@ -125,59 +125,41 @@ def make_male_voice(text):
     subprocess.run(["ffmpeg", "-y", "-i", "temp_voice.wav", "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2", "audio.mp3"], check=True)
 
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
-    print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with Imagen 3...")
+    print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with Pollinations FLUX...")
     total_frames = int(duration_per_scene * 24)
-    headers = {"User-Agent": "Mozilla/5.0"}
-    
-    if GEMINI_IMAGE_KEY:
-        genai.configure(api_key=GEMINI_IMAGE_KEY)
-        print("Successfully loaded second Gemini API key for images.")
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     
     for i, raw_prompt in enumerate(image_prompts[:5]):
         img_file = f"raw_{i}.jpg"
         clip_file = f"motion_{i}.mp4"
-        clean_p = f"{raw_prompt}, cinematic, 8k, highly detailed, photorealistic"
+        clean_p = f"{raw_prompt}, dramatic cinematic lighting, 8k resolution, highly detailed, realistic masterpiece"
+        
+        encoded = urllib.parse.quote(clean_p)
+        seed = random.randint(100, 99999)
+        # Using model=flux for the highest quality possible without an API key
+        url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&seed={seed}&nologo=true&model=flux"
         
         downloaded = False
         
-        # 1. ATTEMPT IMAGEN 3
-        if GEMINI_IMAGE_KEY:
+        for attempt in range(3):
             try:
-                print(f"Generating scene {i+1}/5 with Imagen 3: {raw_prompt}...")
-                imagen = genai.ImageGenerationModel("imagen-3.0-generate-001")
-                result = imagen.generate_images(
-                    prompt=clean_p,
-                    number_of_images=1,
-                    aspect_ratio="9:16",
-                    output_mime_type="image/jpeg"
-                )
-                img_bytes = result.images[0].image.image_bytes
-                with open(img_file, "wb") as f:
-                    f.write(img_bytes)
-                base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
-                base_img.save(img_file, quality=95)
-                downloaded = True
-                print("Imagen 3 Success!")
-            except Exception as e:
-                print(f"Imagen 3 fallback needed: {e}")
-
-        # 2. ATTEMPT POLLINATIONS
-        if not downloaded:
-            encoded = urllib.parse.quote(clean_p)
-            url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&nologo=true&model=turbo"
-            try:
-                print(f"Falling back to Pollinations for scene {i+1}...")
-                r = requests.get(url, headers=headers, timeout=25)
-                if r.status_code == 200 and len(r.content) > 10000:
+                print(f"Downloading scene {i+1}/5: {raw_prompt}...")
+                r = requests.get(url, headers=headers, timeout=40)
+                if r.status_code == 200 and len(r.content) > 20000:
                     with open(img_file, "wb") as f:
                         f.write(r.content)
                     base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
                     base_img.save(img_file, quality=95)
                     downloaded = True
-            except Exception:
-                pass
+                    print(f"Scene {i+1} FLUX generation successful!")
+                    break
+            except Exception as e:
+                print(f"Pollinations rate limit/timeout. Retrying in 5 seconds...")
+            
+            # This sleep is CRITICAL to prevent GitHub IPs from getting blocked by Pollinations
+            time.sleep(5)
                 
-        # 3. ATTEMPT PHOTOGRAPHY
+        # Backup if Pollinations is completely offline
         if not downloaded:
             print(f"Using high-res photographic backup for scene {i+1}...")
             backup_url = HIGHRES_BACKUPS[i % len(HIGHRES_BACKUPS)]
@@ -199,6 +181,8 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
             clip_file
         ]
         subprocess.run(cmd, check=True)
+        # Give Pollinations a 5 second breather before asking for the next image
+        time.sleep(5)
 
 def render_video(metadata):
     audio = AudioFileClip("audio.mp3")
@@ -275,7 +259,7 @@ def post_to_youtube(metadata):
 
 if __name__ == "__main__":
     print("1. Generating unique topic...")
-    meta = generate_ai_content()
+    meta = generate_ai_content(get_channel_recent_titles())
     
     print("2. Synthesizing Piper neural voice...")
     make_male_voice(meta['voice_script'])
