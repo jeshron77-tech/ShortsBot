@@ -156,7 +156,6 @@ FALLBACK_SCRIPTS = [
         "voice_script": "What if frogs evolved back into massive prehistoric predators? Month 1, 10-foot-tall amphibians begin swallowing alligators and livestock whole. Month 4, their deafening mating calls trigger massive earthquakes in marshland regions. Year 1, the southern coastlines are abandoned to the giant frogs as humans flee to the mountains.",
         "image_prompts": ["giant prehistoric frog swamp predator", "massive frog swallowing an alligator", "giant frog roaring swamp earthquake", "abandoned flooded coastal town ruins", "giant frog sitting in mud"]
     },
-    # 10 More concise backups
     {
         "title": "What If Bears Stopped Hibernating Completely? 🐻❄️ #shorts",
         "description": "Winter is no longer safe from apex predators.",
@@ -229,16 +228,14 @@ FALLBACK_SCRIPTS = [
     }
 ]
 
-# Guaranteed Disaster Photography Backups
 HIGHRES_BACKUPS = [
-    "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop", # Space
-    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop", # Globe
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop", # Ocean
-    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop", # Dark Clouds
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop"  # Apocalyptic ruins
+    "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=1080&h=1920&fit=crop", 
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1920&fit=crop", 
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop", 
+    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1080&h=1920&fit=crop", 
+    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1080&h=1920&fit=crop"
 ]
 
-# NEW NICHES FOR EXCLUSIVE ANIMAL CONTENT
 NICHES = [
     "dangerous predatory animal mutations and giant beasts",
     "extinct ancient creatures returning to modern earth",
@@ -317,41 +314,57 @@ def make_male_voice(text):
     subprocess.run(["ffmpeg", "-y", "-i", "temp_voice.wav", "-filter:a", "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2", "audio.mp3"], check=True)
 
 def fetch_and_animate_scenes(image_prompts, duration_per_scene):
-    print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with Pollinations FLUX...")
+    print(f"Rendering 5 cinematic scenes ({duration_per_scene:.2f}s each) with FLUX.1-schnell...")
     total_frames = int(duration_per_scene * 24)
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    
+    # 1. ANTI-BOT HEADERS: We must trick Cloudflare into thinking this is a real human on Google Chrome
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1"
+    }
     
     for i, raw_prompt in enumerate(image_prompts[:5]):
         img_file = f"raw_{i}.jpg"
         clip_file = f"motion_{i}.mp4"
-        clean_p = f"{raw_prompt}, dramatic cinematic lighting, 8k resolution, highly detailed, realistic masterpiece"
+        
+        # 2. NANO BANANA STYLE INJECTION: Forces FLUX.1-schnell to make it vibrant, 3D, and hyper-realistic
+        clean_p = f"{raw_prompt}, Nano Banana style, viral youtube shorts aesthetic, 3D hyper-realistic, vibrant exaggerated colors, Unreal Engine 5 render, 8k resolution"
         
         encoded = urllib.parse.quote(clean_p)
-        seed = random.randint(100, 99999)
+        seed = random.randint(100, 999999)
+        # 3. EXPLICIT FLUX MODEL parameter
         url = f"https://image.pollinations.ai/prompt/{encoded}?width=1080&height=1920&seed={seed}&nologo=true&model=flux"
         
         downloaded = False
         
         for attempt in range(3):
             try:
-                print(f"Downloading scene {i+1}/5: {raw_prompt}...")
-                r = requests.get(url, headers=headers, timeout=40)
-                if r.status_code == 200 and len(r.content) > 20000:
+                print(f"Downloading scene {i+1}/5: {raw_prompt} (Attempt {attempt+1})...")
+                r = requests.get(url, headers=headers, timeout=60)
+                
+                # Check if it actually downloaded an image and not a Cloudflare error page
+                if r.status_code == 200 and len(r.content) > 30000:
                     with open(img_file, "wb") as f:
                         f.write(r.content)
                     base_img = Image.open(img_file).convert("RGB").resize((1080, 1920))
                     base_img.save(img_file, quality=95)
                     downloaded = True
-                    print(f"Scene {i+1} FLUX generation successful!")
+                    print(f"✅ Scene {i+1} FLUX.1-schnell generation successful!")
                     break
+                else:
+                    print(f"Server blocked request or image too small. Status code: {r.status_code}")
             except Exception as e:
-                print(f"Pollinations rate limit/timeout. Retrying in 8 seconds...")
+                print(f"Pollinations timeout: {e}")
             
-            # INCREASED to 8 seconds to guarantee Pollinations allows the next image
-            time.sleep(8)
+            # 4. MASSIVE 15 SECOND DELAY on retry to guarantee IP unblock
+            print("Sleeping for 15 seconds before retry...")
+            time.sleep(15)
                 
         if not downloaded:
-            print(f"Using high-res photographic backup for scene {i+1}...")
+            print(f"⚠️ Using high-res photographic backup for scene {i+1}...")
             backup_url = HIGHRES_BACKUPS[i % len(HIGHRES_BACKUPS)]
             try:
                 r_backup = requests.get(backup_url, headers=headers, timeout=20)
@@ -371,8 +384,10 @@ def fetch_and_animate_scenes(image_prompts, duration_per_scene):
             clip_file
         ]
         subprocess.run(cmd, check=True)
-        # 8 SECOND DELAY between every single scene
-        time.sleep(8)
+        
+        # 5. MASSIVE 15 SECOND DELAY between successful images
+        print("Cooling down 15 seconds to respect server limits...")
+        time.sleep(15)
 
 def render_video(metadata):
     audio = AudioFileClip("audio.mp3")
