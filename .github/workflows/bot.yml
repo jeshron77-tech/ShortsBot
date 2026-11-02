@@ -23,8 +23,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick fonts-dejavu-core
-          # Delete the restrictive security policy to allow MoviePy to render subtitles
-          sudo rm -f /etc/ImageMagick-6/policy.xml
+          # Precise line-edit to unlock subtitles without triggering strict default mode
+          sudo sed -i 's/policy domain="path" rights="none" pattern="@\*"/policy domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml || true
           wget -q https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx
           wget -q https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
 
