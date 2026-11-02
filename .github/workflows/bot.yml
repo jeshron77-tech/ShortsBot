@@ -23,8 +23,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick fonts-dejavu-core
-          # Precise line-edit to unlock subtitles without triggering strict default mode
-          sudo sed -i 's/policy domain="path" rights="none" pattern="@\*"/policy domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml || true
+          
+          # Absolute Override: Replace the entire ImageMagick policy with a 100% unlocked version
+          sudo tee /etc/ImageMagick-6/policy.xml > /dev/null << 'EOF'
+          <policymap>
+            <policy domain="path" rights="read|write" pattern="@*" />
+            <policy domain="module" rights="read|write" pattern="{PS,PDF,XPS}" />
+            <policy domain="resource" name="memory" value="2GiB"/>
+            <policy domain="resource" name="map" value="2GiB"/>
+            <policy domain="resource" name="area" value="2GiB"/>
+            <policy domain="resource" name="disk" value="4GiB"/>
+          </policymap>
+          EOF
+          
           wget -q https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx
           wget -q https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
 
