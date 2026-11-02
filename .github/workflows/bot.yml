@@ -24,8 +24,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick fonts-dejavu-core
           
-          # Absolute Override: Replace the entire ImageMagick policy with a 100% unlocked version
-          sudo tee /etc/ImageMagick-6/policy.xml > /dev/null << 'EOF'
+          # Bulletproof Fix: Create unlocked policy for BOTH ImageMagick 6 and 7
+          sudo mkdir -p /etc/ImageMagick-6 /etc/ImageMagick-7
+          sudo tee /etc/ImageMagick-6/policy.xml /etc/ImageMagick-7/policy.xml > /dev/null << 'EOF'
           <policymap>
             <policy domain="path" rights="read|write" pattern="@*" />
             <policy domain="module" rights="read|write" pattern="{PS,PDF,XPS}" />
